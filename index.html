@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0' />
+    <title>Multiplication</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+
+    <div class="header">
+      <h1>multiplication</h1>
+    </div>
+
+    <div id="v-app" class="">
+      <div class="problem-wrapper">
+        <div id="mult-problem" class="mult-problem">
+          <div id="numA" class="mult-problem-num">{{ numA }}</div>
+          <div id="numB" class="mult-problem-num">x&nbsp;{{ numB }}</div>
+          <hr />
+          <form @submit.prevent="onAnswerSubmit">
+            <input id="answer_input_box" type="number" v-model.number="answer_input" />
+          </form>
+        </div>
+
+        <div class="problem-ctrl-buttons">
+          <button @click="onAnswerSubmit" :class="buttonClass">{{ answerbuttontext }}</button>
+        </div>
+        <div class="resultStatsDiv">
+          <p>Number correctly answered: {{ numCorrect }}</p>
+          <p>Number missed: {{ numIncorrect }}</p>
+        </div>
+      </div>
+
+      <div class="problemStack missedAnswersStack">
+        <div class="stackCard missedAnswerCard" v-for="problem in incorrectAnswers" @click="setProblem(problem)">
+          <div class="answered-stack-prob-num">{{ problem.numA }}</div>
+          <div class="answered-stack-prob-num">x&nbsp;{{ problem.numB }}</div>
+        </div>
+        <hr />
+        <div class="stackLabel">Missed ({{ numIncorrect }})</div>
+      </div>
+
+      <div class="problemStack correctAnswersStack">
+        <div class="stackCard correctAnswerCard" v-for="problem in correctAnswers" @click="setProblem(problem)">
+          <div class="answered-stack-prob-num">{{ problem.numA }}</div>
+          <div class="answered-stack-prob-num">x&nbsp;{{ problem.numB }}</div>
+        </div>
+        <hr />
+        <div class="stackLabel">Correct ({{ numCorrect }})</div>
+      </div>
+
+      <div class="controlPanel">
+
+        <div id="numAControlsDiv" class="numControlSet">
+          <h2>First Number:</h2>
+          <div class="controlSet">
+            <div class="ctrlSetLabel">Min:</div>
+            <button @click="numAmin--">-</button>
+            <div class="ctrl-editable-num">{{ numAmin }}</div>
+            <button @click="numAmin = Math.min(numAmax, numAmin + 1)">+</button>
+          </div>
+
+          <div class="controlSet">
+            <div class="ctrlSetLabel">Max:</div>
+            <button @click="numAmax = Math.max(numAmin, numAmax - 1)">-</button>
+            <div class="ctrl-editable-num">{{ numAmax }}</div>
+            <button @click="numAmax++">+</button>
+          </div>
+
+        </div>
+
+        <div id="numBControlsDiv" class="numControlSet">
+          <h2>Second Number:</h2>
+          <div class="controlSet">
+            <div class="ctrlSetLabel">Min:</div>
+            <button @click="numBmin--">-</button>
+            <div class="ctrl-editable-num">{{ numBmin }}</div>
+            <button @click="numBmin = Math.min(numBmax, numBmin + 1)">+</button>
+          </div>
+
+          <div class="controlSet">
+            <div class="ctrlSetLabel">Max:</div>
+            <button @click="numBmax = Math.max(numBmin, numBmax - 1)">-</button>
+            <div class="ctrl-editable-num">{{ numBmax }}</div>
+            <button @click="numBmax++">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12"></script>
+    <script src="/script.js"></script>
+  </body>
+</html>
