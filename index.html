@@ -32,24 +32,6 @@
         </div>
       </div>
 
-      <div class="problemStack missedAnswersStack">
-        <div class="stackCard missedAnswerCard" v-for="problem in incorrectAnswers" @click="setProblem(problem)">
-          <div class="answered-stack-prob-num">{{ problem.numA }}</div>
-          <div class="answered-stack-prob-num">x&nbsp;{{ problem.numB }}</div>
-        </div>
-        <hr />
-        <div class="stackLabel">Missed ({{ numIncorrect }})</div>
-      </div>
-
-      <div class="problemStack correctAnswersStack">
-        <div class="stackCard correctAnswerCard" v-for="problem in correctAnswers" @click="setProblem(problem)">
-          <div class="answered-stack-prob-num">{{ problem.numA }}</div>
-          <div class="answered-stack-prob-num">x&nbsp;{{ problem.numB }}</div>
-        </div>
-        <hr />
-        <div class="stackLabel">Correct ({{ numCorrect }})</div>
-      </div>
-
       <div class="controlPanel">
 
         <div id="numAControlsDiv" class="numControlSet">
@@ -87,6 +69,25 @@
           </div>
         </div>
       </div>
+
+      <div class="problemStack missedAnswersStack">
+        <div class="stackCard missedAnswerCard" v-for="problem in incorrectAnswers" @click="setProblem(problem)">
+          <div class="answered-stack-prob-num">{{ problem.numA }}</div>
+          <div class="answered-stack-prob-num">x&nbsp;{{ problem.numB }}</div>
+        </div>
+        <hr />
+        <div class="stackLabel">Missed ({{ numIncorrect }})</div>
+      </div>
+
+      <div class="problemStack correctAnswersStack">
+        <div class="stackCard correctAnswerCard" v-for="problem in correctAnswers" @click="setProblem(problem)">
+          <div class="answered-stack-prob-num">{{ problem.numA }}</div>
+          <div class="answered-stack-prob-num">x&nbsp;{{ problem.numB }}</div>
+        </div>
+        <hr />
+        <div class="stackLabel">Correct ({{ numCorrect }})</div>
+      </div>
+
     </div>
 
 
