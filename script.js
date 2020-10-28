@@ -13,10 +13,11 @@ let isEqual = function(obj, other) {
 let app = new Vue({
   el: "#v-app",
   data: {
+    fontFamily: "",
     numAmin: 1,
-    numAmax: 12,
+    numAmax: 4,
     numBmin: 1,
-    numBmax: 12,
+    numBmax: 4,
     numA: 1,
     numB: 1,
     answer_input: undefined,
@@ -119,6 +120,13 @@ let app = new Vue({
       }
 
       this.numIncorrect++;
+
+      for (let i = 0; i < this.correctAnswers.length; i++) {
+        if (isEqual(this.correctAnswers[i], newObj)) {
+          this.correctAnswers.splice(i, 1);
+          break;
+        }
+      }
     },
   },
 
@@ -130,6 +138,11 @@ let app = new Vue({
       let states = ["ans_btn_incorrect", "ans_btn_correct", "ans_btn_default"];
       return states[this.answer_state];
     },
+  },
+  watch: {
+    fontFamily: function() {
+      document.querySelector("html").style.fontFamily = this.fontFamily;
+    }
   },
 
 });

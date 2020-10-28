@@ -26,10 +26,6 @@
         <div class="problem-ctrl-buttons">
           <button @click="onAnswerSubmit" :class="buttonClass">{{ answerbuttontext }}</button>
         </div>
-        <div class="resultStatsDiv">
-          <p>Number correctly answered: {{ numCorrect }}</p>
-          <p>Number missed: {{ numIncorrect }}</p>
-        </div>
       </div>
 
       <div class="controlPanel">
@@ -68,6 +64,16 @@
             <button @click="numBmax++">+</button>
           </div>
         </div>
+      </div>
+
+      <div class="fontselection">
+        <label for="fontFamily">Pick a Font:</label>
+        <select id="fontSelect" v-model="fontFamily">
+          <option value="">normal</option>
+          <option value="monospace">monospace</option>
+          <option value="cursive">cursive</option>
+          <option value="sans-serif">sans-serif</option>
+        </select>
       </div>
 
       <div class="problemStack missedAnswersStack">

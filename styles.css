@@ -1,3 +1,7 @@
+html * {
+  font-family: inherit !important;
+}
+
 html, body {
   width: 100%;
   margin: 0;
@@ -8,10 +12,27 @@ hr {
   width: 100%;
 }
 
+.controlSet button {
+  font-size: 1rem;
+  padding: 0.5rem;
+  font-weight: bold;
+}
+
 button {
   padding: 0.5rem;
   border-radius: 5px;
   font-size: 1.5rem;
+  border: 1px solid #cbcbcb;
+  transition-duration: 0.4s;
+}
+
+button:hover {
+  transform: translateY(-3px) scale(1.1);
+}
+
+button:active {
+  transition-duration: 0s;
+  transform: translateY(1px);
 }
 
 .header {
@@ -182,6 +203,30 @@ input[type=number] {
 .stackLabel {
   font-weight: bold;
   padding: 1rem;
+  border-radius: 5px;
+  color: white;
+  font-family: sans-serif;
+}
+
+.missedAnswersStack .stackLabel {
+  background-color: #ff0000aa;
+}
+
+.correctAnswersStack .stackLabel {
+  background-color: #228b22aa;
+}
+
+.fontselection {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  font-size: 1.5rem;
+}
+
+.fontselection label {
+  padding-bottom: 1rem;
 }
 
 @media only screen and (max-width:500px) {
