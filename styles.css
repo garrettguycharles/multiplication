@@ -14,7 +14,9 @@ body {
 
 
 hr {
-  width: 100%;
+  width: 95%;
+  border: 2px solid black;
+  border-radius: 5px;
 }
 
 .controlSet button {
@@ -235,12 +237,20 @@ input[type=number] {
   padding-bottom: 1rem;
 }
 
-@media only screen and (max-width:500px) {
+@media only screen and (max-width: 600px) {
+  .controlPanel {
+    flex-direction: column;
+  }
+}
+
+@media only screen and (max-width: 500px) {
   html {
     font-size: 12px;
   }
+}
 
-  .controlPanel {
-    flex-direction: column;
+@media only screen and (max-width: 300px) {
+  .problemStack {
+    margin: 0;
   }
 }
