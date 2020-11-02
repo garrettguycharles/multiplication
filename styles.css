@@ -1,3 +1,8 @@
+* {
+  box-sizing: border-box;
+  position: relative;
+}
+
 html * {
   font-family: inherit !important;
 }
@@ -12,11 +17,80 @@ body {
   padding-bottom: 100px;
 }
 
+.clock-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.stopwatch-display {
+  flex: 1;
+  font-size: 5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spacer-header-left {
+  flex: 1;
+}
+
+.header-title {
+  flex: 1;
+  text-align: center;
+}
+
+.settings_toggle {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.settings_toggle span {
+  padding: 1rem;
+}
 
 hr {
   width: 95%;
   border: 2px solid black;
   border-radius: 5px;
+  background-color: black;
+}
+
+.header-title-bar {
+  display:flex;
+  align-items: space-between;
+  justify-content: center;
+  width: 100%;
+}
+
+.settings-panel {
+  display: none;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  color: black;
+  background-color: white;
+  width: 100%;
+}
+
+.setting:not(:last-child) {
+  border-bottom: 1px solid #ebebeb;
+}
+
+.setting {
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 67%;
+  border-right: 1px solid #ebebeb;
+}
+
+.menu-is-visible {
+  display:flex;
 }
 
 .controlSet button {
@@ -42,15 +116,51 @@ button:active {
   transform: translateY(1px);
 }
 
+button:focus {
+  outline: none;
+}
+
+.setselect {
+  flex-direction: column;
+}
+
+.setselect .option-wrapper {
+  width: 10rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  border-top: 2px solid #ebebeb;
+  border-bottom: 2px solid #ebebeb;
+  padding: 1rem 0;
+}
+
+.btn_numselect {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 100%;
+  margin: 0.25rem;
+}
+
+.setselect_active {
+  background-color: #ffa63244;
+  border: 1px solid #ffa63255;
+}
+
 .header {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
   color: white;
   background-color: #32a6ff;
   border-bottom: 1px solid #32a6ff33;
   margin-bottom: 2rem;
   width: 100%;
+  z-index: 20;
 }
 
 .controlSet {
@@ -117,8 +227,9 @@ button:active {
   padding: 0.5rem;
   max-width: 10rem;
   text-align: right;
-  background-color: inherit;
+  background-color: white;
   border: none;
+  border-radius: 5px;
 }
 
 #answer_input_box:focus {
@@ -173,7 +284,7 @@ input[type=number] {
   flex-direction: column;
   position: fixed;
   margin: 1rem;
-  z-index: 300000;
+  z-index: 10;
 }
 
 .stackCard {
@@ -237,6 +348,12 @@ input[type=number] {
   padding-bottom: 1rem;
 }
 
+@media only screen and (min-width: 1280px) {
+  .setting {
+    width: 50%;
+  }
+}
+
 @media only screen and (max-width: 600px) {
   .controlPanel {
     flex-direction: column;
@@ -246,6 +363,11 @@ input[type=number] {
 @media only screen and (max-width: 500px) {
   html {
     font-size: 12px;
+  }
+
+  .setting {
+    width: 100%;
+    border-right: none;
   }
 }
 

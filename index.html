@@ -3,33 +3,99 @@
   <head>
     <meta charset="utf-8">
     <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0' />
-    <title>Multiplication</title>
+    <title>Flashcards</title>
     <link rel="stylesheet" href="/styles.css">
+    <script src="https://kit.fontawesome.com/3bf83529fd.js" crossorigin="anonymous"></script>
     <link href="https://fonts.googleapis.com/css2?family=Amatic+SC&family=Cinzel&family=Grandstander&family=Montserrat&family=Permanent+Marker&family=Poiret+One&family=Press+Start+2P&family=Righteous&family=Staatliches&display=swap" rel="stylesheet">
   </head>
   <body>
 
-    <div class="header">
-      <h1>multiplication</h1>
-    </div>
-
     <div id="v-app" class="">
-      <div class="problem-wrapper">
-        <div id="mult-problem" class="mult-problem">
-          <div id="numA" class="mult-problem-num">{{ numA }}</div>
-          <div id="numB" class="mult-problem-num">x&nbsp;{{ numB }}</div>
-          <hr />
-          <form @submit.prevent="onAnswerSubmit">
-            <input id="answer_input_box" type="number" v-model.number="answer_input" />
-          </form>
+      <div class="header">
+        <div class="header-title-bar">
+          <div class="spacer-header-left">
+
+          </div>
+          <h1 class="header-title">Flashcards</h1>
+          <div class="settings_toggle" @click="settings_visible = !settings_visible"><span>settings</span></div>
         </div>
 
-        <div class="problem-ctrl-buttons">
-          <button @click="onAnswerSubmit" :class="buttonClass">{{ answerbuttontext }}</button>
+        <div class="settings-panel" :class="{'menu-is-visible': settings_visible}">
+          <div class="setting">
+            <label for="ctrlmode">Choose how to pick your sets:</label>
+            <select v-model="ctrlmode">
+              <option value="CTRLMODE_SETSELECT">Simple</option>
+              <option value="CTRLMODE_EXACT">Detailed</option>
+            </select>
+          </div>
+
+          <div class="setting">
+            <label for="fontFamily">Pick a Font:</label>
+            <select id="fontSelect" v-model="fontFamily">
+              <option value="">normal</option>
+              <option value="monospace">monospace</option>
+              <option value="cursive">cursive</option>
+              <option value="sans-serif">sans-serif</option>
+              <option value="'Amatic SC', cursive">Amatic SC</option>
+              <option value="'Cinzel', serif">Cinzel</option>
+              <option value="'Grandstander', cursive">Grandstander</option>
+              <option value="'Montserrat'">Montserrat</option>
+              <option value="'Permanent Marker', cursive">Permanent Marker</option>
+              <option value="'Poiret One', cursive">Poiret One</option>
+              <option value="'Press Start 2P', cursive">Press Start</option>
+              <option value="'Righteous', cursive">Righteous</option>
+              <option value="'Staatliches', cursive">Staatliches</option>
+            </select>
+          </div>
+
+          <div class="setting">
+            <label for="gamemode">Game Mode:</label>
+            <select v-model="gamemode">
+              <option value="GMODE_PRACTICE">Practice Mode</option>
+              <option value="GMODE_CLOCKRACE">Clock Race</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      <div class="controlPanel">
+      <div class="problem-wrapper">
+        <div class="clock-wrapper">
+          <div class="stopwatch-display game-seconds">
+            <span v-if="game.running">{{ stopwatch.game.seconds }}</span>
+          </div>
+          <div id="mult-problem" class="mult-problem">
+            <div id="numA" class="mult-problem-num">{{ numA }}</div>
+            <div id="numB" class="mult-problem-num">x&nbsp;{{ numB }}</div>
+            <hr />
+            <form @submit.prevent="onAnswerSubmit">
+              <input id="answer_input_box" type="number" v-model.number="answer_input" />
+            </form>
+          </div>
+          <div class="stopwatch-display problem-seconds">
+            <span v-if="game.running">{{ stopwatch.problem.seconds }}</span>
+          </div>
+        </div>
+
+        <div class="problem-ctrl-buttons">
+          <button @click="onAnswerSubmit" :class="buttonClass" v-if="gamemode === 'GMODE_PRACTICE'">{{ answerbuttontext }}</button>
+        </div>
+        <button @click="beginGame" :class="buttonClass" v-if="gamemode === 'GMODE_CLOCKRACE'">Start game!</button>
+      </div>
+
+      <div class="controlPanel setselect" v-if="this.ctrlmode == 'CTRLMODE_SETSELECT'">
+        <h2>Choose your sets:</h2>
+        <div class="option-wrapper">
+          <button
+            v-for="number in ctrlpanel.setselect.possible_values"
+            @click.prevent="setselect_toggleActive(number)"
+            class="btn_numselect"
+            :class="{setselect_active: (ctrlpanel.setselect.active_values.includes(number))}">
+            {{ number }}
+          </button>
+        </div>
+      </div>
+
+      <div class="controlPanel" v-if="this.ctrlmode == 'CTRLMODE_EXACT'" >
 
         <div id="numAControlsDiv" class="numControlSet">
           <h2>First Number:</h2>
@@ -65,25 +131,6 @@
             <button @click="numBmax++">+</button>
           </div>
         </div>
-      </div>
-
-      <div class="fontselection">
-        <label for="fontFamily">Pick a Font:</label>
-        <select id="fontSelect" v-model="fontFamily">
-          <option value="">normal</option>
-          <option value="monospace">monospace</option>
-          <option value="cursive">cursive</option>
-          <option value="sans-serif">sans-serif</option>
-          <option value="'Amatic SC', cursive">Amatic SC</option>
-          <option value="'Cinzel', serif">Cinzel</option>
-          <option value="'Grandstander', cursive">Grandstander</option>
-          <option value="'Montserrat'">Montserrat</option>
-          <option value="'Permanent Marker', cursive">Permanent Marker</option>
-          <option value="'Poiret One', cursive">Poiret One</option>
-          <option value="'Press Start 2P', cursive">Press Start</option>
-          <option value="'Righteous', cursive">Righteous</option>
-          <option value="'Staatliches', cursive">Staatliches</option>
-        </select>
       </div>
 
       <div class="problemStack missedAnswersStack">

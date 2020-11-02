@@ -13,7 +13,31 @@ let isEqual = function(obj, other) {
 let app = new Vue({
   el: "#v-app",
   data: {
+    game: {
+      running: false,
+      timer_main: 0,
+      timer_problem: 0,
+      main_length: 60,
+      problem_length: 2,
+    },
+    stopwatch: {
+      game: {
+        seconds: 60,
+      },
+      problem: {
+        seconds: 2,
+      },
+    },
     fontFamily: "",
+    ctrlmode: "CTRLMODE_SETSELECT",
+    gamemode: "GMODE_PRACTICE",
+    ctrlpanel: {
+      setselect: {
+        possible_values: [1,2,3,4,5,6,7,8,9,10,11,12],
+        active_values: [1,2,3,4,5],
+      },
+    },
+    settings_visible: false,
     numAmin: 1,
     numAmax: 4,
     numBmin: 1,
@@ -30,21 +54,48 @@ let app = new Vue({
   },
 
   methods: {
-    getNewProblem: function() {
-      if (this.answer_state === 1) {
-        this.insertCorrectAnswer();
-        this.numA = getRandom(this.numAmin, this.numAmax);
-        this.numB = getRandom(this.numBmin, this.numBmax);
+    setselect_toggleActive: function(number) {
+      if (this.ctrlpanel.setselect.active_values.includes(number)) {
+        if (this.ctrlpanel.setselect.active_values.length > 1) {
+          this.ctrlpanel.setselect.active_values = this.ctrlpanel.setselect.active_values.filter(a => a !== number);
+        }
       } else {
-        this.insertIncorrectAnswer();
-        let temp = this.numA;
-        this.numA = this.numB;
-        this.numB = temp;
+        this.ctrlpanel.setselect.active_values.push(number);
+      }
+    },
+    getNewProblem: function() {
+      if (this.gamemode === "GMODE_PRACTICE") {
+        if (this.answer_state === 1) {
+          this.insertCorrectAnswer();
+          this.populateNewProblem();
+        } else {
+          this.insertIncorrectAnswer();
+          let temp = this.numA;
+          this.numA = this.numB;
+          this.numB = temp;
+        }
+
+        this.answer_input = undefined;
+        this.answer_state = 2;
+        this.updateAnswerButtonText();
       }
 
-      this.answer_input = undefined;
-      this.answer_state = 2;
-      this.updateAnswerButtonText();
+      if (this.gamemode === "GMODE_CLOCKRACE" && this.game.running) {
+        if (this.answer_state === 0) {
+          this.insertIncorrectAnswer();
+        } else if (this.answer_state === 1) {
+          this.insertCorrectAnswer();
+        }
+
+        this.populateNewProblem();
+
+        clearInterval(this.game.timer_problem);
+        this.stopwatch.problem.seconds = this.game.problem_length;
+
+        this.answer_input = undefined;
+
+        this.game.timer_problem = setInterval(this.incStopwatchProblem, 1000);
+      }
     },
     setProblem(obj) {
       this.numA = obj.numA;
@@ -53,15 +104,73 @@ let app = new Vue({
       this.answer_state = 2;
       document.getElementById("answer_input_box").focus();
     },
-    onAnswerSubmit: function() {
-      if (this.answer_input === undefined) {
-        return;
+    populateNewProblem: function() {
+      if (this.ctrlmode == "CTRLMODE_EXACT") {
+        this.numA = getRandom(this.numAmin, this.numAmax);
+        this.numB = getRandom(this.numBmin, this.numBmax);
       }
 
-      if (this.answer_state === 2) {
-        this.checkAnswer();
+      if (this.ctrlmode == "CTRLMODE_SETSELECT") {
+        this.numA = this.ctrlpanel.setselect.active_values[
+          Math.floor(Math.random() * this.ctrlpanel.setselect.active_values.length)
+        ];
+        this.numB = getRandom(0, 12);
+      }
+    },
+    beginGame: function() {
+      this.numCorrect = 0;
+      this.numIncorrect =  0;
+      this.correctAnswers = [],
+      this.incorrectAnswers = [],
+      this.stopwatch.game.seconds = this.game.main_length;
+      this.game.timer_main = setInterval(this.incStopwatchGame,1000);
+      clearInterval(this.game.timer_problem);
+      this.stopwatch.problem.seconds = this.game.problem_length;
+
+      this.answer_input = undefined;
+
+      this.game.timer_problem = setInterval(this.incStopwatchProblem, 1000);
+      this.game.running = true;
+    },
+    incStopwatchGame: function() {
+      if (this.stopwatch.game.seconds > 0) {
+        this.stopwatch.game.seconds--;
       } else {
+        this.game.running = false;
+        clearInterval(this.game.timer_main);
+        clearInterval(this.game.timer_problem);
+        this.showScores();
+      }
+    },
+    incStopwatchProblem: function() {
+      if (this.stopwatch.problem.seconds > 0) {
+        this.stopwatch.problem.seconds--;
+      } else {
+        clearInterval(this.game.timer_problem);
+        this.onAnswerSubmit();
+      }
+    },
+    showScores: function() {
+      alert("Time\'s Up!\nCorrect: " + this.numCorrect.toString() + "\nIncorrect: " + this.numIncorrect.toString());
+    },
+    onAnswerSubmit: function() {
+
+      if (this.gamemode === "GMODE_CLOCKRACE" && this.game.running) {
+        this.checkAnswer();
         this.getNewProblem();
+      }
+
+      if (this.gamemode === "GMODE_PRACTICE") {
+        if (this.answer_input === undefined) {
+          return;
+        }
+
+        if (this.answer_state === 2) {
+          this.checkAnswer();
+          this.updateAnswerButtonText();
+        } else {
+          this.getNewProblem();
+        }
       }
     },
     checkAnswer: function() {
@@ -70,8 +179,6 @@ let app = new Vue({
       } else {
         this.answer_state = 0;
       }
-
-      this.updateAnswerButtonText();
     },
     updateAnswerButtonText: function() {
       let states = ["Oops!  The correct answer was " + this.product + ".  Lets try again :)", "Correct! :) Next Problem...", "Check Answer"];
@@ -142,7 +249,13 @@ let app = new Vue({
   watch: {
     fontFamily: function() {
       document.querySelector("html").style.fontFamily = this.fontFamily;
-    }
+    },
+    gamemode: function() {
+      if (gamemode == "GMODE_PRACTICE") {
+        game.running = false;
+        this.showScores();
+      }
+    },
   },
 
 });
