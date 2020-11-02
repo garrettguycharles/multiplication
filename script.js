@@ -235,6 +235,13 @@ let app = new Vue({
         }
       }
     },
+    stopGame: function() {
+      clearInterval(this.game.timer_main);
+      clearInterval(this.game.timer_problem);
+      this.answer_state = 2;
+      this.game.running = false;
+      this.showScores();
+    }
   },
 
   computed: {
@@ -249,12 +256,6 @@ let app = new Vue({
   watch: {
     fontFamily: function() {
       document.querySelector("html").style.fontFamily = this.fontFamily;
-    },
-    gamemode: function() {
-      if (gamemode == "GMODE_PRACTICE") {
-        game.running = false;
-        this.showScores();
-      }
     },
   },
 

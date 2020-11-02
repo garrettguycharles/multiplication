@@ -67,7 +67,7 @@
             <div id="numA" class="mult-problem-num">{{ numA }}</div>
             <div id="numB" class="mult-problem-num">x&nbsp;{{ numB }}</div>
             <hr />
-            <form @submit.prevent="onAnswerSubmit">
+            <form @submit.prevent="if (answer_input !== undefined) {onAnswerSubmit();}">
               <input id="answer_input_box" type="number" v-model.number="answer_input" />
             </form>
           </div>
@@ -78,8 +78,14 @@
 
         <div class="problem-ctrl-buttons">
           <button @click="onAnswerSubmit" :class="buttonClass" v-if="gamemode === 'GMODE_PRACTICE'">{{ answerbuttontext }}</button>
+          <button @click="if (!game.running) {beginGame();}" :class="buttonClass" v-if="gamemode === 'GMODE_CLOCKRACE'">
+            <span v-if="!game.running">Start Game</span>
+            <span v-if="answer_state === 0">Incorrect</span>
+            <span v-if="answer_state === 1">Correct</span>
+            <span v-if="game.running && answer_state > 1" >Go!</span>
+          </button>
+          <button v-if="game.running" class="ans_btn_default" @click="stopGame">Stop Game</button>
         </div>
-        <button @click="beginGame" :class="buttonClass" v-if="gamemode === 'GMODE_CLOCKRACE'">Start game!</button>
       </div>
 
       <div class="controlPanel setselect" v-if="this.ctrlmode == 'CTRLMODE_SETSELECT'">
