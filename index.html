@@ -80,8 +80,8 @@
           <button @click="onAnswerSubmit" :class="buttonClass" v-if="gamemode === 'GMODE_PRACTICE'">{{ answerbuttontext }}</button>
           <button @click="if (!game.running) {beginGame();}" :class="buttonClass" v-if="gamemode === 'GMODE_CLOCKRACE'">
             <span v-if="!game.running">Start Game</span>
-            <span v-if="answer_state === 0">Incorrect</span>
-            <span v-if="answer_state === 1">Correct</span>
+            <span v-if="answer_state === 0 && answer_state > 1">Incorrect</span>
+            <span v-if="answer_state === 1 && answer_state > 1">Correct</span>
             <span v-if="game.running && answer_state > 1" >Go!</span>
           </button>
           <button v-if="game.running" class="ans_btn_default" @click="stopGame">Stop Game</button>
