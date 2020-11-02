@@ -30,7 +30,7 @@ let app = new Vue({
     },
     fontFamily: "",
     ctrlmode: "CTRLMODE_SETSELECT",
-    gamemode: "GMODE_PRACTICE",
+    gamemode: "GMODE_CLOCKRACE",
     ctrlpanel: {
       setselect: {
         possible_values: [1,2,3,4,5,6,7,8,9,10,11,12],
