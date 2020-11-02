@@ -131,6 +131,7 @@ let app = new Vue({
 
       this.game.timer_problem = setInterval(this.incStopwatchProblem, 1000);
       this.game.running = true;
+      document.getElementById("answer_input_box").focus();
     },
     incStopwatchGame: function() {
       if (this.stopwatch.game.seconds > 0) {
