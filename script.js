@@ -1,3 +1,5 @@
+//const this.socket = io();
+
 let getRandom = function(min, max) {
   let diff = max - min;
 
@@ -13,14 +15,30 @@ let isEqual = function(obj, other) {
 let app = new Vue({
   el: "#v-app",
   data: {
+    STATE: 'WELCOME_SCREEN',
+    ONLINE_MENU_STATE: 'TOP_MENU',
+    ONLINE_GAME_STATE: 'LOBBY',
+    join_room_code: "",
+    create_room_code: "",
+    online_play_name: "",
+    socket: null,
+    error: "this is a test error",
+    countdown_interval: null,
+    online_game: {
+      room_code: "",
+      players: [],
+      state: "",
+    },
     game: {
+      is_online: false,
       running: false,
       timer_main: 0,
       timer_problem: 0,
-      main_length: 60,
+      main_length: 15,
       problem_length: 2,
     },
     stopwatch: {
+      countdown: 0,
       game: {
         seconds: 60,
       },
@@ -30,7 +48,7 @@ let app = new Vue({
     },
     fontFamily: "",
     ctrlmode: "CTRLMODE_SETSELECT",
-    gamemode: "GMODE_CLOCKRACE",
+    gamemode: "GMODE_PRACTICE",
     ctrlpanel: {
       setselect: {
         possible_values: [1,2,3,4,5,6,7,8,9,10,11,12],
@@ -54,6 +72,135 @@ let app = new Vue({
   },
 
   methods: {
+    joinRoomByCode: async function() {
+      console.log("Attempted to join room by code.");
+      this.socket = io('http://localhost:3005');
+      //this.socket.connect('http://localhost:3005');
+
+      this.socket.on("welcome", () => {
+        this.socket.emit("join_room", {
+          'player_name': this.online_play_name,
+          'room_code': this.join_room_code,
+        });
+      });
+
+      this.socket.on("joined_room", (data) => {
+        // change this later
+        this.error = "successfully joined room!"
+        this.online_game = data;
+        this.STATE = "ONLINE_GAME";
+        this.ONLINE_GAME_STATE = "LOBBY";
+      });
+
+      this.socket.on("game_already_started", () => {
+        this.error = "That game already started.";
+        this.socket.disconnect();
+        this.socket = null;
+      });
+
+      this.socket.on("room_code_not_found", () => {
+        this.error = "We couldn't find that room.  Please try again!";
+        this.socket.disconnect();
+        this.socket = null;
+      });
+
+      this.socket.on("player_name_unavailable", () => {
+        this.error = "That name is already taken.  Please choose a different name.";
+        this.socket.disconnect();
+        this.socket = null;
+      });
+
+
+      this.initSocket(this.socket);
+    },
+    createRoomByCode: async function() {
+      console.log("Attempting to create room by code.");
+      this.socket = io('http://localhost:3005');
+      console.log("Attempted to create room by code.");
+
+      //this.socket.connect('http://localhost:3005');
+
+      this.socket.on("welcome", () => {
+        this.socket.emit("create_room", {
+          'player_name': this.online_play_name,
+          'room_code': this.create_room_code,
+        });
+      });
+
+      this.socket.on("room_code_unavailable", () => {
+        this.error = "That room code is already taken.  Try another one!";
+      });
+
+      this.socket.on("new_room_created", (data) => {
+        // change later
+        this.error = "Room successfully created!";
+        this.online_game = data;
+        this.STATE = "ONLINE_GAME";
+        this.ONLINE_GAME_STATE = "LOBBY";
+      });
+
+      this.initSocket(this.socket);
+    },
+    initSocket: async function (socket) {
+      socket.on("player_joined", (player) => {
+        if (!(this.online_game.players.find(el => el.name === player.name))) {
+          this.online_game.players.push(player);
+        }
+      });
+
+      socket.on("player_disconnected", (player) => {
+        let i = this.online_game.players.findIndex(el => el.name === player.name);
+        if (i > -1) {
+          this.online_game.players.splice(i, 1);
+        }
+      });
+
+      socket.on("room_destroy", () => {
+        this.STATE = "ONLINE_MENU";
+        this.ONLINE_GAME_STATE = "LOBBY";
+        this.ONLINE_MENU_STATE = "TOP_MENU";
+      });
+
+      socket.on("begin_game", (start_time) => {
+        this.ONLINE_GAME_STATE = 'PLAYING_GAME';
+        this.game.is_online = true;
+        if (this.countdown_interval === null) {
+          this.countdown_interval = setInterval(() => {
+            if (Date.now() > start_time) {
+              clearInterval(this.countdown_interval);
+              this.countdown_interval = null;
+              this.stopwatch.countdown = -1;
+              this.beginGame();
+            } else {
+              this.stopwatch.countdown = Math.floor((start_time - Date.now()) / 1000);
+              if (this.stopwatch.countdown === 0) {
+                this.stopwatch.countdown = "GO!";
+              }
+            }
+
+          }, 1000 / 30);
+        }
+
+      });
+
+      socket.on("download_player_data", (data) => {
+        this.online_game.players = data.players;
+      });
+
+      socket.on("show-scores", (data) => {
+        this.online_game = data;
+        this.ONLINE_GAME_STATE = 'SHOW_SCORES';
+      });
+    },
+    startOnlineGame: function() {
+      if (!(this.is_room_owner)) {
+        return;
+      }
+
+      this.ONLINE_GAME_STATE = "PLAYING_GAME";
+
+      this.socket.emit("start_game");
+    },
     setselect_toggleActive: function(number) {
       if (this.ctrlpanel.setselect.active_values.includes(number)) {
         if (this.ctrlpanel.setselect.active_values.length > 1) {
@@ -118,18 +265,23 @@ let app = new Vue({
       }
     },
     beginGame: function() {
+      this.gamemode = 'GMODE_CLOCKRACE';
       this.numCorrect = 0;
       this.numIncorrect =  0;
       this.correctAnswers = [],
       this.incorrectAnswers = [],
       this.stopwatch.game.seconds = this.game.main_length;
+
+      clearInterval(this.game.timer_main);
       this.game.timer_main = setInterval(this.incStopwatchGame,1000);
-      clearInterval(this.game.timer_problem);
+
       this.stopwatch.problem.seconds = this.game.problem_length;
 
       this.answer_input = undefined;
 
+      clearInterval(this.game.timer_problem);
       this.game.timer_problem = setInterval(this.incStopwatchProblem, 1000);
+
       this.game.running = true;
       document.getElementById("answer_input_box").focus();
     },
@@ -152,7 +304,12 @@ let app = new Vue({
       }
     },
     showScores: function() {
-      alert("Time\'s Up!\nCorrect: " + this.numCorrect.toString() + "\nIncorrect: " + this.numIncorrect.toString());
+      if (!(this.game.is_online)) {
+        alert("Time\'s Up!\nCorrect: " + this.numCorrect.toString() + "\nIncorrect: " + this.numIncorrect.toString());
+      } else {
+        this.socket.emit("game_finished");
+      }
+
     },
     onAnswerSubmit: function() {
 
@@ -210,6 +367,10 @@ let app = new Vue({
           break;
         }
       }
+
+      if (this.game.is_online) {
+        this.uploadData();
+      }
     },
     insertIncorrectAnswer: function() {
       let newObj = {numA: this.numA, numB: this.numB};
@@ -235,6 +396,20 @@ let app = new Vue({
           break;
         }
       }
+
+      if (this.game.is_online) {
+        this.uploadData();
+      }
+    },
+    uploadData: function() {
+      let data = {
+        numCorrect: this.numCorrect,
+        numIncorrect: this.numIncorrect,
+        correctAnswers: this.correctAnswers,
+        incorrectAnswers: this.incorrectAnswers,
+      };
+
+      this.socket.emit("upload_player_data", data);
     },
     stopGame: function() {
       clearInterval(this.game.timer_main);
@@ -242,6 +417,15 @@ let app = new Vue({
       this.answer_state = 2;
       this.game.running = false;
       this.showScores();
+    },
+    back_button_pressed: function () {
+      switch (this.STATE) {
+        case 'LOCAL_PLAY':
+          this.STATE = 'WELCOME_SCREEN';
+          break;
+        default:
+
+      }
     }
   },
 
@@ -253,6 +437,14 @@ let app = new Vue({
       let states = ["ans_btn_incorrect", "ans_btn_correct", "ans_btn_default"];
       return states[this.answer_state];
     },
+    is_room_owner: function() {
+      let my_player = this.online_game.players.find(el => el.name === this.online_play_name);
+      if (my_player && my_player.room_owner) {
+        return true;
+      }
+
+      return false;
+    }
   },
   watch: {
     fontFamily: function() {

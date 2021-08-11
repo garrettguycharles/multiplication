@@ -5,156 +5,398 @@
     <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0' />
     <title>Flashcards</title>
     <link rel="stylesheet" href="/styles.css">
-    <script src="https://kit.fontawesome.com/3bf83529fd.js" crossorigin="anonymous"></script>
+    <script src="http://localhost:3005/socket.io/socket.io.js" charset="utf-8"></script>
+    <script src="https://kit.fontawesome.com/ce22f167aa.js" crossorigin="anonymous"></script>
     <link href="https://fonts.googleapis.com/css2?family=Amatic+SC&family=Cinzel&family=Grandstander&family=Montserrat&family=Permanent+Marker&family=Poiret+One&family=Press+Start+2P&family=Righteous&family=Staatliches&display=swap" rel="stylesheet">
   </head>
   <body>
 
     <div id="v-app" class="">
-      <div class="header">
-        <div class="header-title-bar">
-          <div class="spacer-header-left">
 
-          </div>
-          <h1 class="header-title">Flashcards</h1>
-          <div class="settings_toggle" @click="settings_visible = !settings_visible"><span>settings</span></div>
-        </div>
-
-        <div class="settings-panel" :class="{'menu-is-visible': settings_visible}">
-          <div class="setting">
-            <label for="ctrlmode">Choose how to pick your sets:</label>
-            <select v-model="ctrlmode">
-              <option value="CTRLMODE_SETSELECT">Simple</option>
-              <option value="CTRLMODE_EXACT">Detailed</option>
-            </select>
-          </div>
-
-          <div class="setting">
-            <label for="fontFamily">Pick a Font:</label>
-            <select id="fontSelect" v-model="fontFamily">
-              <option value="">normal</option>
-              <option value="monospace">monospace</option>
-              <option value="cursive">cursive</option>
-              <option value="sans-serif">sans-serif</option>
-              <option value="'Amatic SC', cursive">Amatic SC</option>
-              <option value="'Cinzel', serif">Cinzel</option>
-              <option value="'Grandstander', cursive">Grandstander</option>
-              <option value="'Montserrat'">Montserrat</option>
-              <option value="'Permanent Marker', cursive">Permanent Marker</option>
-              <option value="'Poiret One', cursive">Poiret One</option>
-              <option value="'Press Start 2P', cursive">Press Start</option>
-              <option value="'Righteous', cursive">Righteous</option>
-              <option value="'Staatliches', cursive">Staatliches</option>
-            </select>
-          </div>
-
-          <div class="setting">
-            <label for="gamemode">Game Mode:</label>
-            <select v-model="gamemode">
-              <option value="GMODE_PRACTICE">Practice Mode</option>
-              <option value="GMODE_CLOCKRACE">Clock Race</option>
-            </select>
-          </div>
+      <div class="welcome-screen" v-if="this.STATE === 'WELCOME_SCREEN'">
+        <div class="welcome-content">
+          <h1 class="welcome-title">Flashcards</h1>
+          <h3 class="welcome-subtitle">by Garrett Charles</h3>
+          <button class="welcome-play-button" @click="STATE = 'LOCAL_PLAY'">PLAY</button>
+          <button class="welcome-play-online" @click="STATE = 'ONLINE_MENU'">PLAY ONLINE</button>
         </div>
       </div>
 
-      <div class="problem-wrapper">
-        <div class="clock-wrapper">
-          <div class="stopwatch-display game-seconds">
-            <span v-if="game.running">{{ stopwatch.game.seconds }}</span>
+      <div class="welcome-screen" v-if="this.STATE === 'ONLINE_MENU'">
+        <div class="online-play-menu">
+          <h1 class="online-play-menu-title">Online Play</h1>
+          <h3 class="online-play-menu-subtitle"><span style="font-family: 'Permanent Marker' !important;">Flashcards</span> by Garrett Charles</h3>
+
+          <div class="online-menu-buttons" v-if="this.ONLINE_MENU_STATE === 'TOP_MENU'">
+            <button class="online-menu-button online-menu-join-room-button" @click="ONLINE_MENU_STATE = 'JOIN_ROOM'">JOIN ROOM</button>
+            <button class="online-menu-button" @click="ONLINE_MENU_STATE = 'CREATE_ROOM'">CREATE NEW ROOM</button>
+            <button class="online-menu-button"
+              @click="STATE = 'WELCOME_SCREEN'"
+              ><i class="fas fa-arrow-left"></i>&nbsp;BACK</button>
           </div>
-          <div id="mult-problem" class="mult-problem">
-            <div id="numA" class="mult-problem-num">{{ numA }}</div>
-            <div id="numB" class="mult-problem-num">x&nbsp;{{ numB }}</div>
+
+          <div class="online-menu-buttons" v-if="this.ONLINE_MENU_STATE === 'JOIN_ROOM'">
+
+            <div class="room-code-input-wrapper">
+              <label for="set_name">YOUR NAME:</label>
+              <input type="text" name="" value="" v-model="online_play_name">
+            </div>
+
+            <div class="room-code-input-wrapper">
+              <label for="">ROOM CODE:</label>
+              <input type="text" name="" value="" v-model="join_room_code">
+            </div>
+            <button class="online-menu-button" @click="joinRoomByCode()">JOIN ROOM</button>
+
+            <button class="online-menu-button"
+              @click="ONLINE_MENU_STATE = 'TOP_MENU'"
+              ><i class="fas fa-arrow-left"></i>&nbsp;BACK</button>
+
+            <span class="error-message" v-if="this.error">{{ error }}</span>
+          </div>
+
+          <div class="online-menu-buttons" v-if="this.ONLINE_MENU_STATE === 'CREATE_ROOM'">
+            <div class="room-code-input-wrapper">
+              <label for="set_name">YOUR NAME:</label>
+              <input type="text" name="" value="" v-model="online_play_name">
+            </div>
+
+            <div class="room-code-input-wrapper">
+              <label for="set_name">SET ROOM CODE:</label>
+              <input type="text" name="" value="" v-model="create_room_code">
+            </div>
+
+            <button class="online-menu-button" @click="createRoomByCode()">GO</button>
+
+            <button class="online-menu-button"
+              @click="ONLINE_MENU_STATE = 'TOP_MENU'"
+              ><i class="fas fa-arrow-left"></i>&nbsp;BACK</button>
+
+            <span class="error-message" v-if="this.error">{{ error }}</span>
+          </div>
+
+        </div>
+      </div>
+
+
+      <div v-if="this.STATE === 'ONLINE_GAME'">
+        <div class="header">
+          <div class="header-title-bar">
+            <div class="spacer-header-left">
+              <div class="header-back-button" @click="back_button_pressed();">
+                <i class="fas fa-arrow-left"></i>
+              </div>
+              <span>ROOM CODE: {{ online_game.room_code }}</span>
+
+            </div>
+            <div class="header-title-wrapper">
+              <h1 class="header-title">Flashcards</h1>
+              <h5 class="header-subtitle">by Garrett Charles</h5>
+            </div>
+            <div :class="{'settings_toggle':true, 'settings-open': settings_visible}" @click="settings_visible = !settings_visible"><i class="fas fa-cog"></i></div>
+          </div>
+
+          <div class="settings-panel" :class="{'menu-is-visible': settings_visible}">
+
+            <div class="setting">
+              <label for="fontFamily">Pick a Font:</label>
+              <select id="fontSelect" v-model="fontFamily">
+                <option value="">normal</option>
+                <option value="monospace">monospace</option>
+                <option value="cursive">cursive</option>
+                <option value="sans-serif">sans-serif</option>
+                <option value="'Amatic SC', cursive">Amatic SC</option>
+                <option value="'Cinzel', serif">Cinzel</option>
+                <option value="'Grandstander', cursive">Grandstander</option>
+                <option value="'Montserrat'">Montserrat</option>
+                <option value="'Permanent Marker', cursive">Permanent Marker</option>
+                <option value="'Poiret One', cursive">Poiret One</option>
+                <option value="'Press Start 2P', cursive">Press Start</option>
+                <option value="'Righteous', cursive">Righteous</option>
+                <option value="'Staatliches', cursive">Staatliches</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+
+        <div v-if="this.ONLINE_GAME_STATE === 'LOBBY'">
+          <div class="lobby-player-list">
+            <h2 class="lobby-player-list-title">PLAYERS</h2>
+            <div v-for="player in online_game.players" class="lobby-player">
+              <span>{{ player.name }}</span>
+            </div>
+
+            <h2 v-if="online_game.players.length < 2">awaiting players...</h2>
+            <div v-if="online_game.players.length > 1">
+              <button v-if="is_room_owner" @click="startOnlineGame()">
+                START GAME
+              </button>
+              <h2 v-if="!is_room_owner">Waiting to Start!</h2>
+            </div>
+
+          </div>
+
+        </div>
+
+        <div v-if="['PLAYING_GAME', 'SHOW_SCORES'].includes(this.ONLINE_GAME_STATE)" :class="{'all-players-stacks':true, 'translucent':game.running}">
+
+          <div class="problemStack correctAnswersStack" v-for="player in online_game.players">
+            <div class="stackCardWrapper">
+              <div class="stackCard correctAnswerCard" v-for="problem in player.correctAnswers">
+                <div class="stackCard-numA">{{ problem.numA }}</div>
+                <div class="stackCard-operator">x</div>
+                <div class="stackCard-numB">{{ problem.numB }}</div>
+              </div>
+            </div>
+
             <hr />
-            <form @submit.prevent="if (answer_input !== undefined) {onAnswerSubmit();}">
-              <input id="answer_input_box" type="number" v-model.number="answer_input" />
-            </form>
+            <div class="stackLabel">{{ player.name }}<br />({{ player.numCorrect }})</div>
           </div>
-          <div class="stopwatch-display problem-seconds">
-            <span v-if="game.running">{{ stopwatch.problem.seconds }}</span>
-          </div>
+
         </div>
 
-        <div class="problem-ctrl-buttons">
-          <button @click="onAnswerSubmit" :class="buttonClass" v-if="gamemode === 'GMODE_PRACTICE'">{{ answerbuttontext }}</button>
-          <button @click="if (!game.running) {beginGame();}" :class="buttonClass" v-if="gamemode === 'GMODE_CLOCKRACE'">
-            <span v-if="!game.running">Start Game</span>
-            <span v-if="answer_state === 0 && game.running">Incorrect</span>
-            <span v-if="answer_state === 1 && game.running">Correct</span>
-            <span v-if="game.running && answer_state > 1" >Go!</span>
-          </button>
-          <button v-if="game.running" class="ans_btn_default" @click="stopGame">Stop Game</button>
+
+        <div v-if="this.ONLINE_GAME_STATE === 'PLAYING_GAME'">
+          <div class="game-countdown" v-if="stopwatch.countdown > -1"><span>{{ stopwatch.countdown }}</span></div>
+
+
+          <div class="problem-wrapper">
+            <div class="clock-wrapper">
+              <div class="stopwatch-display game-seconds">
+                <span v-if="game.running">{{ stopwatch.game.seconds }}</span>
+              </div>
+              <div id="mult-problem" class="mult-problem">
+                <div id="numA" class="mult-problem-num">{{ numA }}</div>
+                <div id="numB" class="mult-problem-num">x&nbsp;{{ numB }}</div>
+                <hr />
+                <form @submit.prevent="if (answer_input !== undefined) {onAnswerSubmit();}">
+                  <input id="answer_input_box" type="number" v-model.number="answer_input" />
+                </form>
+              </div>
+              <div class="stopwatch-display problem-seconds">
+                <span v-if="game.running">{{ stopwatch.problem.seconds }}</span>
+              </div>
+            </div>
+          </div>
+
+
+
+          <div class="problemStack missedAnswersStack">
+            <div class="stackCardWrapper">
+              <div class="stackCard missedAnswerCard" v-for="problem in incorrectAnswers" @click="setProblem(problem)">
+                <div class="stackCard-numA">{{ problem.numA }}</div>
+                <div class="stackCard-operator">x</div>
+                <div class="stackCard-numB">{{ problem.numB }}</div>
+              </div>
+            </div>
+
+            <hr />
+            <div class="stackLabel">Missed<br />({{ numIncorrect }})</div>
+          </div>
+
+          <div class="problemStack correctAnswersStack">
+            <div class="stackCardWrapper">
+              <div class="stackCard correctAnswerCard" v-for="problem in correctAnswers" @click="setProblem(problem)">
+                <div class="stackCard-numA">{{ problem.numA }}</div>
+                <div class="stackCard-operator">x</div>
+                <div class="stackCard-numB">{{ problem.numB }}</div>
+              </div>
+            </div>
+
+            <hr />
+            <div class="stackLabel">Correct<br />({{ numCorrect }})</div>
+          </div>
+
         </div>
+
+        <div v-if="this.ONLINE_GAME_STATE === 'SHOW_SCORES'" class="score-table-wrapper">
+
+          <table cellspacing="0">
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th>Correct</th>
+                <th>Incorrect</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="player in online_game.players">
+                <td>{{ player.name }}</td>
+                <td>{{ player.numCorrect }}</td>
+                <td>{{ player.numIncorrect }}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <button v-if="this.is_room_owner" @click="startOnlineGame()">PLAY AGAIN</button>
+
+        </div>
+
       </div>
 
-      <div class="controlPanel setselect" v-if="this.ctrlmode == 'CTRLMODE_SETSELECT'">
-        <h2>Choose your sets:</h2>
-        <div class="option-wrapper">
-          <button
+
+      <div v-if="this.STATE === 'LOCAL_PLAY'">
+        <div class="header">
+          <div class="header-title-bar">
+            <div class="spacer-header-left">
+              <div class="header-back-button" @click="back_button_pressed();">
+                <i class="fas fa-arrow-left"></i>
+              </div>
+
+            </div>
+            <div class="header-title-wrapper">
+              <h1 class="header-title">Flashcards</h1>
+              <h5 class="header-subtitle">by Garrett Charles</h5>
+            </div>
+            <div :class="{'settings_toggle':true, 'settings-open': settings_visible}" @click="settings_visible = !settings_visible"><i class="fas fa-cog"></i></div>
+          </div>
+
+          <div class="settings-panel" :class="{'menu-is-visible': settings_visible}">
+            <div class="setting">
+              <label for="ctrlmode">Choose how to pick your sets:</label>
+              <select v-model="ctrlmode">
+                <option value="CTRLMODE_SETSELECT">Simple</option>
+                <option value="CTRLMODE_EXACT">Detailed</option>
+              </select>
+            </div>
+
+            <div class="setting">
+              <label for="fontFamily">Pick a Font:</label>
+              <select id="fontSelect" v-model="fontFamily">
+                <option value="">normal</option>
+                <option value="monospace">monospace</option>
+                <option value="cursive">cursive</option>
+                <option value="sans-serif">sans-serif</option>
+                <option value="'Amatic SC', cursive">Amatic SC</option>
+                <option value="'Cinzel', serif">Cinzel</option>
+                <option value="'Grandstander', cursive">Grandstander</option>
+                <option value="'Montserrat'">Montserrat</option>
+                <option value="'Permanent Marker', cursive">Permanent Marker</option>
+                <option value="'Poiret One', cursive">Poiret One</option>
+                <option value="'Press Start 2P', cursive">Press Start</option>
+                <option value="'Righteous', cursive">Righteous</option>
+                <option value="'Staatliches', cursive">Staatliches</option>
+              </select>
+            </div>
+
+            <div class="setting">
+              <label for="gamemode">Game Mode:</label>
+              <select v-model="gamemode">
+                <option value="GMODE_PRACTICE">Practice Mode</option>
+                <option value="GMODE_CLOCKRACE">Clock Race</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="problem-wrapper">
+          <div class="clock-wrapper">
+            <div class="stopwatch-display game-seconds">
+              <span v-if="game.running">{{ stopwatch.game.seconds }}</span>
+            </div>
+            <div id="mult-problem" class="mult-problem">
+              <div id="numA" class="mult-problem-num">{{ numA }}</div>
+              <div id="numB" class="mult-problem-num">x&nbsp;{{ numB }}</div>
+              <hr />
+              <form @submit.prevent="if (answer_input !== undefined) {onAnswerSubmit();}">
+                <input id="answer_input_box" type="number" v-model.number="answer_input" />
+              </form>
+            </div>
+            <div class="stopwatch-display problem-seconds">
+              <span v-if="game.running">{{ stopwatch.problem.seconds }}</span>
+            </div>
+          </div>
+
+          <div class="problem-ctrl-buttons">
+            <button @click="onAnswerSubmit" :class="buttonClass" v-if="gamemode === 'GMODE_PRACTICE'">{{ answerbuttontext }}</button>
+            <button @click="if (!game.running) {beginGame();}" :class="buttonClass" v-if="gamemode === 'GMODE_CLOCKRACE'">
+              <span v-if="!game.running">Start Game</span>
+              <span v-if="answer_state === 0 && game.running">Incorrect</span>
+              <span v-if="answer_state === 1 && game.running">Correct</span>
+              <span v-if="game.running && answer_state > 1" >Go!</span>
+            </button>
+            <button v-if="game.running" class="ans_btn_default" @click="stopGame">Stop Game</button>
+          </div>
+        </div>
+
+        <div class="controlPanel setselect" v-if="this.ctrlmode == 'CTRLMODE_SETSELECT'">
+          <h2>Choose your sets:</h2>
+          <div class="option-wrapper">
+            <button
             v-for="number in ctrlpanel.setselect.possible_values"
             @click.prevent="setselect_toggleActive(number)"
             class="btn_numselect"
             :class="{setselect_active: (ctrlpanel.setselect.active_values.includes(number))}">
-            {{ number }}
-          </button>
-        </div>
-      </div>
-
-      <div class="controlPanel" v-if="this.ctrlmode == 'CTRLMODE_EXACT'" >
-
-        <div id="numAControlsDiv" class="numControlSet">
-          <h2>First Number:</h2>
-          <div class="controlSet">
-            <div class="ctrlSetLabel">Min:</div>
-            <button @click="numAmin--">-</button>
-            <div class="ctrl-editable-num">{{ numAmin }}</div>
-            <button @click="numAmin = Math.min(numAmax, numAmin + 1)">+</button>
-          </div>
-
-          <div class="controlSet">
-            <div class="ctrlSetLabel">Max:</div>
-            <button @click="numAmax = Math.max(numAmin, numAmax - 1)">-</button>
-            <div class="ctrl-editable-num">{{ numAmax }}</div>
-            <button @click="numAmax++">+</button>
-          </div>
-
-        </div>
-
-        <div id="numBControlsDiv" class="numControlSet">
-          <h2>Second Number:</h2>
-          <div class="controlSet">
-            <div class="ctrlSetLabel">Min:</div>
-            <button @click="numBmin--">-</button>
-            <div class="ctrl-editable-num">{{ numBmin }}</div>
-            <button @click="numBmin = Math.min(numBmax, numBmin + 1)">+</button>
-          </div>
-
-          <div class="controlSet">
-            <div class="ctrlSetLabel">Max:</div>
-            <button @click="numBmax = Math.max(numBmin, numBmax - 1)">-</button>
-            <div class="ctrl-editable-num">{{ numBmax }}</div>
-            <button @click="numBmax++">+</button>
+              {{ number }}
+            </button>
           </div>
         </div>
-      </div>
 
-      <div class="problemStack missedAnswersStack">
-        <div class="stackCard missedAnswerCard" v-for="problem in incorrectAnswers" @click="setProblem(problem)">
-          <div class="answered-stack-prob-num">{{ problem.numA }}</div>
-          <div class="answered-stack-prob-num">x&nbsp;{{ problem.numB }}</div>
-        </div>
-        <hr />
-        <div class="stackLabel">Missed<br />({{ numIncorrect }})</div>
-      </div>
+        <div class="controlPanel" v-if="this.ctrlmode == 'CTRLMODE_EXACT'" >
 
-      <div class="problemStack correctAnswersStack">
-        <div class="stackCard correctAnswerCard" v-for="problem in correctAnswers" @click="setProblem(problem)">
-          <div class="answered-stack-prob-num">{{ problem.numA }}</div>
-          <div class="answered-stack-prob-num">x&nbsp;{{ problem.numB }}</div>
+          <div id="numAControlsDiv" class="numControlSet">
+            <h2>First Number:</h2>
+            <div class="controlSet">
+              <div class="ctrlSetLabel">Min:</div>
+              <button @click="numAmin--">-</button>
+              <div class="ctrl-editable-num">{{ numAmin }}</div>
+              <button @click="numAmin = Math.min(numAmax, numAmin + 1)">+</button>
+            </div>
+
+            <div class="controlSet">
+              <div class="ctrlSetLabel">Max:</div>
+              <button @click="numAmax = Math.max(numAmin, numAmax - 1)">-</button>
+              <div class="ctrl-editable-num">{{ numAmax }}</div>
+              <button @click="numAmax++">+</button>
+            </div>
+
+          </div>
+
+          <div id="numBControlsDiv" class="numControlSet">
+            <h2>Second Number:</h2>
+            <div class="controlSet">
+              <div class="ctrlSetLabel">Min:</div>
+              <button @click="numBmin--">-</button>
+              <div class="ctrl-editable-num">{{ numBmin }}</div>
+              <button @click="numBmin = Math.min(numBmax, numBmin + 1)">+</button>
+            </div>
+
+            <div class="controlSet">
+              <div class="ctrlSetLabel">Max:</div>
+              <button @click="numBmax = Math.max(numBmin, numBmax - 1)">-</button>
+              <div class="ctrl-editable-num">{{ numBmax }}</div>
+              <button @click="numBmax++">+</button>
+            </div>
+          </div>
         </div>
-        <hr />
-        <div class="stackLabel">Correct<br />({{ numCorrect }})</div>
+
+        <div class="problemStack missedAnswersStack">
+          <div class="stackCardWrapper">
+            <div class="stackCard missedAnswerCard" v-for="problem in incorrectAnswers" @click="setProblem(problem)">
+              <div class="stackCard-numA">{{ problem.numA }}</div>
+              <div class="stackCard-operator">x</div>
+              <div class="stackCard-numB">{{ problem.numB }}</div>
+            </div>
+          </div>
+
+          <hr />
+          <div class="stackLabel">Missed<br />({{ numIncorrect }})</div>
+        </div>
+
+        <div class="problemStack correctAnswersStack">
+          <div class="stackCardWrapper">
+            <div class="stackCard correctAnswerCard" v-for="problem in correctAnswers" @click="setProblem(problem)">
+              <div class="stackCard-numA">{{ problem.numA }}</div>
+              <div class="stackCard-operator">x</div>
+              <div class="stackCard-numB">{{ problem.numB }}</div>
+            </div>
+          </div>
+
+          <hr />
+          <div class="stackLabel">Correct<br />({{ numCorrect }})</div>
+        </div>
+
       </div>
 
     </div>

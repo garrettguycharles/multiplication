@@ -1,3 +1,13 @@
+:root {
+  --site-content-max-width: 1230px;
+  --color-primary: #32a6ff;
+  --color-primary-dark: #2296ef;
+  --header-height: 75px;
+  --card-width: 50px;
+  --card-height: 65px;
+  --border-radius-small: 5px;
+}
+
 * {
   box-sizing: border-box;
   position: relative;
@@ -17,6 +27,119 @@ body {
   padding-bottom: 100px;
 }
 
+.online-play-menu {
+  width: 100%;
+  max-width: var(--site-content-max-width);
+  display: grid;
+  grid-template: 2fr 1rem 5fr / 3fr 1fr 2fr;
+}
+
+.online-play-menu-title {
+  grid-column: 1 / span 1;
+  grid-row: 1 / span 1;
+  margin: 0;
+  font-family: 'Permanent Marker' !important;
+  font-size: 5rem;
+}
+
+.online-play-menu-subtitle {
+  grid-column: 1 / span 1;
+  grid-row: 2 / span 1;
+  font-family: 'Montserrat' !important;
+  margin: 0;
+}
+
+.online-menu-buttons {
+  grid-column: 3 / span 1;
+  grid-row: 1 / span 3;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  font-family: 'Montserrat' !important;
+}
+
+.welcome-screen {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  height: 100vh;
+}
+
+.welcome-content {
+  width: 100%;
+  max-width: var(--site-content-max-width);
+  display: grid;
+  grid-template: 2fr 0.5fr 1rem repeat(4, 1fr) / repeat(5, 1fr);
+}
+
+.welcome-title {
+  grid-column: 1 / span 2;
+  grid-row: 1 / span 1;
+  margin: 0;
+  font-family: 'Permanent Marker' !important;
+  font-size: 5rem;
+}
+
+.welcome-subtitle  {
+  grid-column: 1 / span 2;
+  grid-row: 2 / span 1;
+  font-family: 'Montserrat' !important;
+  margin: 0;
+}
+
+.welcome-content button, .online-play-menu button {
+  font-family: 'Montserrat' !important;
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.welcome-content button:hover, .online-play-menu button:hover {
+  background-color: var(--color-primary-dark);
+}
+
+.online-menu-join-room-button {
+  font-size: 3rem;
+  padding: 2rem 0rem;
+}
+
+.online-menu-button:not(:first-child) {
+  margin-top: 1rem;
+}
+
+.welcome-play-button {
+  font-size: 3rem;
+  grid-row: 1 / span 2;
+  grid-column: 4 / span 2;
+}
+
+.welcome-play-online {
+  grid-column: 4 / span 2;
+  grid-row: 4 / span 1;
+}
+
+.room-code-input-wrapper {
+  display: grid;
+  grid-template: 1fr 1fr / 1fr;
+  margin-top: 1rem;
+  height: 4rem;
+}
+
+.room-code-input-wrapper *:last-child {
+  margin: 0;
+}
+
+.room-code-input-wrapper input {
+  border-radius: var(--border-radius-small);
+}
+
+label {
+  font-weight: bold;
+}
+
 .clock-wrapper {
   display: flex;
   align-items: center;
@@ -32,13 +155,40 @@ body {
   justify-content: center;
 }
 
+.fa, .far, .fas {
+  font-family: "Font Awesome 5 Free" !important;
+}
+
 .spacer-header-left {
   flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  font-family: 'Montserrat' !important;
+}
+
+.header-back-button {
+  font-size: calc(var(--header-height) * 0.5);
+  padding: calc(var(--header-height) * 0.25);
 }
 
 .header-title {
-  flex: 1;
+  grid-row: 2;
   text-align: center;
+  font-family: 'Permanent Marker' !important;
+  margin: auto 0;
+}
+
+.header-subtitle {
+  grid-row: 3;
+  font-family: 'Montserrat' !important;
+  margin: auto 0;
+}
+
+.header-title-wrapper {
+  display: grid;
+  grid-template: 1fr auto auto 1fr / 1fr;
+  height: 100%;
 }
 
 .settings_toggle {
@@ -46,16 +196,22 @@ body {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  font-size: calc(var(--header-height) * 0.5);
+  padding: calc(var(--header-height) * 0.25);
 }
 
-.settings_toggle span {
-  padding: 1rem;
+.settings_toggle i {
+  transition-duration: 0.4s;
+}
+
+.settings_toggle.settings-open i {
+  transform: rotate(-90deg);
 }
 
 hr {
   width: 95%;
   border: 2px solid black;
-  border-radius: 5px;
+  border-radius: var(--border-radius-small);
   background-color: black;
 }
 
@@ -64,16 +220,24 @@ hr {
   align-items: space-between;
   justify-content: center;
   width: 100%;
+  height: 100%;
 }
 
 .settings-panel {
   display: none;
+  box-shadow: -100vh 100vh 0px 100vh #00000055;
+  position: absolute;
+  top: 100%;
+  right: 0;
   flex-direction: column;
   align-items: flex-start;
   justify-content: flex-start;
   color: black;
   background-color: white;
-  width: 100%;
+  width: max-content;
+  border-bottom-left-radius: var(--border-radius-small);
+  border-bottom-right-radius: var(--border-radius-small);
+  overflow: hidden;
 }
 
 .setting:not(:last-child) {
@@ -85,8 +249,17 @@ hr {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 67%;
   border-right: 1px solid #ebebeb;
+  width: 100%;
+}
+
+.setting select {
+  flex:1;
+}
+
+.setting label {
+  flex:1;
+  padding-right: 1rem;
 }
 
 .menu-is-visible {
@@ -101,19 +274,9 @@ hr {
 
 button {
   padding: 0.5rem;
-  border-radius: 5px;
+  border-radius: var(--border-radius-small);
   font-size: 1.5rem;
   border: 1px solid #cbcbcb;
-  transition-duration: 0.4s;
-}
-
-button:hover {
-  transform: translateY(-3px) scale(1.1);
-}
-
-button:active {
-  transition-duration: 0s;
-  transform: translateY(1px);
 }
 
 button:focus {
@@ -161,6 +324,7 @@ button:focus {
   margin-bottom: 2rem;
   width: 100%;
   z-index: 20;
+  height: var(--header-height);
 }
 
 .controlSet {
@@ -186,7 +350,7 @@ button:focus {
 
 .ctrl-editable-num {
   border: 1px solid #ebebeb;
-  border-radius: 5px;
+  border-radius: var(--border-radius-small);
   padding: 0.5rem;
   margin: 0.5rem;
 }
@@ -210,9 +374,9 @@ button:focus {
   align-items: flex-end;
   justify-content: center;
   flex-direction: column;
-  background-color: #32a6ff22;
+  background-color: #e8f7ff;
   border: 1px solid #32a6ff33;
-  border-radius: 5px;
+  border-radius: var(--border-radius-small);
   padding: 1rem;
 
 
@@ -229,7 +393,7 @@ button:focus {
   text-align: right;
   background-color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: var(--border-radius-small);
 }
 
 #answer_input_box:focus {
@@ -280,28 +444,54 @@ input[type=number] {
 .problemStack {
   display:flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   flex-direction: column;
   position: fixed;
   margin: 1rem;
   z-index: 10;
 }
 
-.stackCard {
-  padding: 0.5rem;
-  border-radius: 5px;
-  margin: 0.5rem;
+.stackCardWrapper {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  justify-content: center;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.stackCard {
+  border-radius: var(--border-radius-small);
+  margin-top: -90%;
+  display: grid;
+  grid-template: 10% 1fr 5% 1fr 10% / 10% 1fr 2fr 10%;
   cursor: pointer;
   transition-duration: 0.4s;
+  box-shadow: 0px 0px 5px 0px #777777;
+  font-size: calc(var(--card-height) / 3);
+  width: var(--card-width);
+  height: var(--card-height);
+}
+
+.stackCard-numA {
+  grid-row: 2 / span 1;
+  grid-column: 2 / span 2;
+  text-align: right;
+}
+
+.stackCard-numB {
+  grid-row: 4 / span 1;
+  grid-column: 3 / span 1;
+  text-align: right;
+}
+
+.stackCard-operator {
+  grid-row: 4 / span 1;
+  grid-column: 2 / span 1;
+  text-align: right;
 }
 
 .missedAnswerCard {
-  border: 1px solid #ff000033;
-  background-color: #ff000022;
+  background-color: #f5b3a9;
 }
 
 .stackCard:hover {
@@ -314,14 +504,13 @@ input[type=number] {
 }
 
 .correctAnswerCard {
-  border: 1px solid #00ff0033;
-  background-color: #00ff0022;
+  background-color: #a9f5d2;
 }
 
 .stackLabel {
   font-weight: bold;
   padding: 1rem;
-  border-radius: 5px;
+  border-radius: var(--border-radius-small);
   color: white;
   font-family: sans-serif;
   text-align: center;
@@ -348,15 +537,152 @@ input[type=number] {
   padding-bottom: 1rem;
 }
 
-@media only screen and (min-width: 1280px) {
-  .setting {
-    width: 50%;
+.error-message {
+  color: white;
+  background-color: #ff0000;
+  border-radius: var(--border-radius-small);
+  border: 2px solid black;
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.lobby-player-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  max-width: var(--site-content-max-width);
+  width: 100%;
+  padding: 1rem;
+  font-family: 'Montserrat' !important;
+}
+
+.lobby-player {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-radius: var(--border-radius-small);
+  box-shadow: 0px 0px 5px 0px #cbcbcb;
+  margin-bottom: 1rem;
+}
+
+.game-countdown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+  font-size: 70vh;
+  width: 100vw;
+  height: 100vh;
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 50;
+}
+
+.all-players-stacks {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  z-index: -1;
+}
+
+.all-players-stacks .problemStack {
+  position: relative;
+  z-index: -1;
+  filter: opacity(1);
+}
+
+.translucent {
+  filter: opacity(0.5);
+}
+
+.score-table-wrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Montserrat' !important;
+}
+
+.score-table-wrapper table {
+  margin-bottom: 1rem;
+}
+
+.score-table-wrapper td {
+  border-right: 1px solid #ebebeb;
+  border-bottom: 1px solid #ebebeb;
+}
+
+.score-table-wrapper th {
+  border-bottom: 1px solid #ebebeb;
+}
+
+.score-table-wrapper th:not(:last-of-type) {
+  border-right: 1px solid #ebebeb;
+}
+
+.score-table-wrapper td, .score-table-wrapper th {
+  padding: 0.5rem;
+  text-align: center;
+}
+
+@media only screen and (max-width: 900px) {
+  .online-play-menu {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    padding: 0rem 10%;
+  }
+
+  .online-menu-button {
+    margin-top: 1rem;
+  }
+
+  .welcome-content {
+    grid-template: 2fr repeat(5, 1fr) / repeat(5, 1fr);
+    padding: 0rem 10%;
+  }
+
+  .welcome-title {
+    grid-column: 1 / span 5;
+    grid-row: 1 / span 1;
+    font-size: 5rem;
+  }
+
+  .welcome-subtitle {
+    grid-column: 1 / span 5;
+    grid-row: 2 / span 1;
+  }
+
+  .welcome-play-button {
+    font-size: 3rem;
+    grid-row: 3 / span 2;
+    grid-column: 1 / span 5;
+  }
+
+  .welcome-play-online {
+    grid-row: 6 / span 1;
+    grid-column: 1 / span 5;
   }
 }
 
 @media only screen and (max-width: 600px) {
   .controlPanel {
     flex-direction: column;
+  }
+
+  .settings-panel {
+    width: 100%;
   }
 }
 
@@ -368,6 +694,10 @@ input[type=number] {
   .setting {
     width: 100%;
     border-right: none;
+  }
+
+  .stackCardWrapper {
+    flex-direction: column-reverse;
   }
 }
 
