@@ -73,6 +73,11 @@ class Game {
     this.players = [ownerPlayer];
     games[this.room_code] = this;
     this.state = "awaiting_players";
+    this.leaders = {
+      first: [],
+      second: [],
+      third: [],
+    }
   }
 
   add_player(p) {
@@ -94,11 +99,14 @@ class Game {
       room_code: this.room_code,
       players: [],
       state: this.state,
+      leaders: this.leaders,
     }
 
     for (let p of this.players) {
       to_return.players.push(p.toObject());
     }
+
+    to_return.players = to_return.players.sort((a, b) => (a.numCorrect-a.numIncorrect > b.numCorrect - b.numIncorrect) ? 1 : -1);
 
     console.log(to_return);
 
@@ -155,8 +163,16 @@ io.on("connection", socket => {
 
   socket.on("start_game", (data) => {
     if (player && player.room_owner) {
-      let start_time = Date.now() + 5000;
-      io.in(game.room_code).emit("begin_game", start_time);
+      game.state = "playing";
+
+      for (let p of game.players) {
+        p.correctAnswers = [];
+        p.incorrectAnswers = [];
+        p.numCorrect = 0;
+        p.numIncorrect = 0;
+      }
+
+      io.in(game.room_code).emit("begin_game", game.toObject());
     }
   });
 
@@ -185,10 +201,15 @@ io.on("connection", socket => {
 
         if (finished) {
           clearInterval(game_finish_interval);
+          game.state = "awaiting_players";
           io.in(game.room_code).emit("show-scores", game.toObject());
         }
       }, 200);
     }
+  });
+
+  socket.on("force_disconnect", function() {
+    socket.disconnect(true);
   });
 
   socket.on('disconnect', function() {
@@ -196,15 +217,45 @@ io.on("connection", socket => {
     setTimeout(() => {
       if (player && socket.disconnected) {
         if (player.room_owner) {
-          console.log("Ending game.");
-          io.in(game.room_code).emit("room_destroy");
+          console.log("Room owner disconnected.");
+          player.room_owner = false;
 
-          delete games[game.room_code];
+          let should_destroy = true;
+          for (let p of game.players) {
+            if (!(p.socket.disconnected)) {
+              console.log(`Transferring room ${game.room_code} ownership to ${p.name}`);
+              should_destroy = false;
+              p.room_owner = true;
+              p.socket.emit("toast", {
+                text: "The room owner disconnected.  You are the new room owner!",
+                duration: 5000,
+              });
+
+              io.in(game.room_code).emit("download_player_data", game.toObject());
+              break;
+            }
+          }
+
+          if (should_destroy) {
+            console.log(`Ending game ${game.room_code}`);
+            io.in(game.room_code).emit("room_destroy");
+
+            delete games[game.room_code];
+          } else {
+            game.players.splice(game.players.indexOf(player), 1);
+            io.in(game.room_code).emit("player_disconnected", player.toObject());
+            player.socket.disconnect(true);
+          }
+
+
         } else {
           console.log("Non-owner leaving game");
           game.players.splice(game.players.indexOf(player), 1);
           io.in(game.room_code).emit("player_disconnected", player.toObject());
+          player.socket.disconnect(true);
         }
+
+        socket.removeAllListeners();
 
       } else {
         console.log("Successfully reconnected!")

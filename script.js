@@ -12,6 +12,39 @@ let isEqual = function(obj, other) {
   return ((obj.numA === other.numA) && (obj.numB === other.numB));
 }
 
+function lerp(a, b, amount) {
+  if (amount >= 1) {
+    return b;
+  }
+
+  if (amount <= 0) {
+    return a;
+  }
+
+  let d = b - a;
+  d *= amount;
+  return a + d;
+}
+
+let padding = 10;
+
+let stopwatch_canvas = document.createElement("canvas");
+stopwatch_canvas.width = 150;
+stopwatch_canvas.height = 150;
+
+let master_ctx = stopwatch_canvas.getContext("2d");
+
+let FPS = 45;
+
+let milli = 15;
+let seconds = 0;
+
+let r = 0x32;
+let g = 0xa6;
+let b = 0xff;
+
+let stopwatch_canvas_interval;
+
 let app = new Vue({
   el: "#v-app",
   data: {
@@ -22,23 +55,33 @@ let app = new Vue({
     create_room_code: "",
     online_play_name: "",
     socket: null,
-    error: "this is a test error",
+    error: "",
+    toast: "",
+    show_toast: false,
+    show_error: false,
+    toast_timeout: null,
+    error_timeout: null,
     countdown_interval: null,
     online_game: {
       room_code: "",
       players: [],
       state: "",
+      leaders: {
+        first: [],
+        second: [],
+        third: [],
+      },
     },
     game: {
       is_online: false,
       running: false,
       timer_main: 0,
       timer_problem: 0,
-      main_length: 15,
-      problem_length: 2,
+      main_length: 60,
+      problem_length: 5,
     },
     stopwatch: {
-      countdown: 0,
+      countdown: "0",
       game: {
         seconds: 60,
       },
@@ -46,7 +89,9 @@ let app = new Vue({
         seconds: 2,
       },
     },
-    fontFamily: "",
+    local_stopwatch_ctx: null,
+    online_stopwatch_ctx: null,
+    fontFamily: "'Montserrat'",
     ctrlmode: "CTRLMODE_SETSELECT",
     gamemode: "GMODE_PRACTICE",
     ctrlpanel: {
@@ -74,6 +119,13 @@ let app = new Vue({
   methods: {
     joinRoomByCode: async function() {
       console.log("Attempted to join room by code.");
+
+      if (!(this.online_play_name && this.join_room_code)) {
+        this.setError("Make sure you put in your name and the room code! :)");
+        return;
+      }
+
+
       this.socket = io('http://localhost:3005');
       //this.socket.connect('http://localhost:3005');
 
@@ -86,28 +138,25 @@ let app = new Vue({
 
       this.socket.on("joined_room", (data) => {
         // change this later
-        this.error = "successfully joined room!"
+        this.setToast("successfully joined room!");
         this.online_game = data;
         this.STATE = "ONLINE_GAME";
         this.ONLINE_GAME_STATE = "LOBBY";
       });
 
       this.socket.on("game_already_started", () => {
-        this.error = "That game already started.";
-        this.socket.disconnect();
-        this.socket = null;
+        this.setError("That game already started.");
+        this.disconnectSocket();
       });
 
       this.socket.on("room_code_not_found", () => {
-        this.error = "We couldn't find that room.  Please try again!";
-        this.socket.disconnect();
-        this.socket = null;
+        this.setError("We couldn't find that room.  Please try again!");
+        this.disconnectSocket();
       });
 
       this.socket.on("player_name_unavailable", () => {
-        this.error = "That name is already taken.  Please choose a different name.";
-        this.socket.disconnect();
-        this.socket = null;
+        this.setError("That name is already taken.  Please choose a different name.");
+        this.disconnectSocket();
       });
 
 
@@ -115,6 +164,12 @@ let app = new Vue({
     },
     createRoomByCode: async function() {
       console.log("Attempting to create room by code.");
+
+      if (!(this.online_play_name && this.create_room_code)) {
+        this.setError("Make sure you put in your name and the room code! :)");
+        return;
+      }
+
       this.socket = io('http://localhost:3005');
       console.log("Attempted to create room by code.");
 
@@ -128,12 +183,12 @@ let app = new Vue({
       });
 
       this.socket.on("room_code_unavailable", () => {
-        this.error = "That room code is already taken.  Try another one!";
+        this.setError("That room code is already taken.  Try another one!");
       });
 
       this.socket.on("new_room_created", (data) => {
         // change later
-        this.error = "Room successfully created!";
+        this.setToast("Room successfully created!");
         this.online_game = data;
         this.STATE = "ONLINE_GAME";
         this.ONLINE_GAME_STATE = "LOBBY";
@@ -155,15 +210,20 @@ let app = new Vue({
         }
       });
 
+      socket.on("toast", (data) => {
+        this.setToast(data.text, data.duration);
+      });
+
       socket.on("room_destroy", () => {
         this.STATE = "ONLINE_MENU";
         this.ONLINE_GAME_STATE = "LOBBY";
         this.ONLINE_MENU_STATE = "TOP_MENU";
       });
 
-      socket.on("begin_game", (start_time) => {
+      socket.on("begin_game", (data) => {
+        this.online_game.players = data.players;
+        let start_time = Date.now() + 4000;
         this.ONLINE_GAME_STATE = 'PLAYING_GAME';
-        this.game.is_online = true;
         if (this.countdown_interval === null) {
           this.countdown_interval = setInterval(() => {
             if (Date.now() > start_time) {
@@ -172,8 +232,8 @@ let app = new Vue({
               this.stopwatch.countdown = -1;
               this.beginGame();
             } else {
-              this.stopwatch.countdown = Math.floor((start_time - Date.now()) / 1000);
-              if (this.stopwatch.countdown === 0) {
+              this.stopwatch.countdown = Math.floor((start_time - Date.now()) / 1000).toString();
+              if (this.stopwatch.countdown === "0") {
                 this.stopwatch.countdown = "GO!";
               }
             }
@@ -190,7 +250,39 @@ let app = new Vue({
       socket.on("show-scores", (data) => {
         this.online_game = data;
         this.ONLINE_GAME_STATE = 'SHOW_SCORES';
+        this.online_game.leaders = this.populateLeaderboard();
       });
+    },
+    disconnectSocket: function() {
+      if (this.socket) {
+        this.socket.emit("force_disconnect");
+        this.socket = null;
+      }
+
+      clearInterval(this.game.timer_main);
+      clearInterval(this.game.timer_problem);
+      clearInterval(stopwatch_canvas_interval);
+      this.game.running = false;
+    },
+    setToast: function(text, duration=5000) {
+      clearTimeout(this.toast_timeout);
+
+      this.toast = text;
+      this.show_toast = true;
+
+      this.toast_timeout = setTimeout(() => {
+        this.show_toast = false;
+      }, duration);
+    },
+    setError: function(text, duration=5000) {
+      clearTimeout(this.error_timeout);
+
+      this.error = text;
+      this.show_error = true;
+
+      this.error_timeout = setTimeout(() => {
+        this.show_error = false;
+      }, duration);
     },
     startOnlineGame: function() {
       if (!(this.is_room_owner)) {
@@ -272,6 +364,16 @@ let app = new Vue({
       this.incorrectAnswers = [],
       this.stopwatch.game.seconds = this.game.main_length;
 
+      if (this.STATE === 'LOCAL_PLAY') {
+        this.local_stopwatch_ctx = document.getElementById("local_stopwatch_canvas").getContext("2d");
+        this.local_stopwatch_ctx.canvas.width = 150;
+        this.local_stopwatch_ctx.canvas.height = 150;
+      } else {
+        this.online_stopwatch_ctx = document.getElementById("online_stopwatch_canvas").getContext("2d");
+        this.online_stopwatch_ctx.canvas.width = 150;
+        this.online_stopwatch_ctx.canvas.height = 150;
+      }
+
       clearInterval(this.game.timer_main);
       this.game.timer_main = setInterval(this.incStopwatchGame,1000);
 
@@ -282,12 +384,24 @@ let app = new Vue({
       clearInterval(this.game.timer_problem);
       this.game.timer_problem = setInterval(this.incStopwatchProblem, 1000);
 
+      seconds = 0;
+      milli = 0;
+
+      clearInterval(stopwatch_canvas_interval);
+
+      stopwatch_canvas_interval = setInterval(() => {
+        this.update();
+        this.draw();
+      }, 1000 / FPS);
+
       this.game.running = true;
       document.getElementById("answer_input_box").focus();
     },
     incStopwatchGame: function() {
       if (this.stopwatch.game.seconds > 0) {
         this.stopwatch.game.seconds--;
+        milli = 0;
+        seconds = this.game.main_length - this.stopwatch.game.seconds;
       } else {
         this.game.running = false;
         clearInterval(this.game.timer_main);
@@ -300,15 +414,20 @@ let app = new Vue({
         this.stopwatch.problem.seconds--;
       } else {
         clearInterval(this.game.timer_problem);
-        this.onAnswerSubmit();
+        if (this.STATE === "LOCAL_PLAY") {
+          this.onAnswerSubmit();
+        }
+
       }
     },
     showScores: function() {
-      if (!(this.game.is_online)) {
+      if (this.STATE === 'LOCAL_PLAY') {
         alert("Time\'s Up!\nCorrect: " + this.numCorrect.toString() + "\nIncorrect: " + this.numIncorrect.toString());
       } else {
         this.socket.emit("game_finished");
       }
+
+      clearInterval(stopwatch_canvas_interval);
 
     },
     onAnswerSubmit: function() {
@@ -368,7 +487,7 @@ let app = new Vue({
         }
       }
 
-      if (this.game.is_online) {
+      if (this.STATE === 'ONLINE_GAME') {
         this.uploadData();
       }
     },
@@ -397,7 +516,7 @@ let app = new Vue({
         }
       }
 
-      if (this.game.is_online) {
+      if (this.STATE === 'ONLINE_GAME') {
         this.uploadData();
       }
     },
@@ -423,9 +542,154 @@ let app = new Vue({
         case 'LOCAL_PLAY':
           this.STATE = 'WELCOME_SCREEN';
           break;
+        case 'ONLINE_GAME':
+          this.disconnectSocket();
+          this.STATE = 'ONLINE_MENU';
+          break;
         default:
 
       }
+    },
+    draw: function() {
+      master_ctx.clearRect(0, 0, stopwatch_canvas.width, stopwatch_canvas.height);
+
+      master_ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${0x99 / 0xff})`;
+      master_ctx.beginPath();
+      master_ctx.moveTo(stopwatch_canvas.width / 2, stopwatch_canvas.height / 2);
+      master_ctx.lineTo(stopwatch_canvas.width / 2, padding);
+      master_ctx.ellipse(stopwatch_canvas.width / 2, stopwatch_canvas.height / 2, stopwatch_canvas.width / 2 - padding * 2, stopwatch_canvas.height / 2 - padding * 2, 0, -Math.PI / 2, -Math.PI / 2 + (2 * Math.PI * seconds / this.game.main_length) * milli / 1000);
+      master_ctx.closePath();
+      master_ctx.fill();
+
+      var gradient = master_ctx.createRadialGradient(stopwatch_canvas.width / 3, stopwatch_canvas.height / 3, 0, stopwatch_canvas.width / 2, stopwatch_canvas.height / 2, stopwatch_canvas.width / 2);
+
+      let alph = lerp(0.5, 1, seconds / this.game.main_length);
+
+      gradient.addColorStop(0, `rgba(${r + 0x70}, ${g + 0x70}, ${b + 0x70}, ${alph})`);
+      gradient.addColorStop(0.3, `rgba(${r + 0x20}, ${g + 0x20}, ${b + 0x20}, ${alph})`);
+      gradient.addColorStop(0.7, `rgba(${r - 0x20}, ${g - 0x20}, ${b - 0x20}, ${alph})`);
+      gradient.addColorStop(1, `rgba(${r - 0x70}, ${g - 0x70}, ${b - 0x70}, ${alph})`);
+
+      master_ctx.fillStyle =  gradient;
+      master_ctx.beginPath();
+      master_ctx.moveTo(stopwatch_canvas.width / 2, stopwatch_canvas.height / 2);
+      master_ctx.lineTo(stopwatch_canvas.width / 2, padding);
+      master_ctx.ellipse(stopwatch_canvas.width / 2, stopwatch_canvas.height / 2, stopwatch_canvas.width / 2 - padding, stopwatch_canvas.height / 2 - padding, 0, -Math.PI / 2, -Math.PI / 2 + (2 * Math.PI * seconds / this.game.main_length), true);
+      master_ctx.closePath();
+      master_ctx.fill();
+
+
+      master_ctx.strokeStyle = "red";
+      master_ctx.beginPath();
+      master_ctx.moveTo(stopwatch_canvas.width / 2, stopwatch_canvas.height / 2);
+      let theta = (2 * Math.PI * seconds / this.game.main_length) * milli / 1000 - Math.PI / 2;
+      master_ctx.lineTo(stopwatch_canvas.width / 2 + (stopwatch_canvas.width / 2 - padding) * Math.cos(theta), stopwatch_canvas.height / 2 + (stopwatch_canvas.height / 2 - padding) * Math.sin(theta));
+      master_ctx.lineWidth = 1.5;
+      master_ctx.stroke();
+
+      master_ctx.fillStyle = "white";
+      master_ctx.strokeStyle = `rgb(${r}, ${g}, ${b})`;
+      master_ctx.lineWidth = 1.5;
+      master_ctx.font = `bold ${stopwatch_canvas.height / 2}px sans-serif`
+      master_ctx.textBaseline = "middle";
+      master_ctx.textAlign = "center";
+      let text = `${Math.floor(this.game.main_length - seconds)}`;
+      let metric = master_ctx.measureText(text);
+      let offset = (metric.actualBoundingBoxAscent - metric.actualBoundingBoxDescent) / 2;
+      master_ctx.fillText(text, stopwatch_canvas.width / 2, stopwatch_canvas.height / 2 + offset);
+      master_ctx.strokeText(text, stopwatch_canvas.width / 2, stopwatch_canvas.height / 2 + offset);
+
+      if (this.STATE === 'LOCAL_PLAY') {
+        this.local_stopwatch_ctx.clearRect(0, 0, this.local_stopwatch_ctx.canvas.width, this.local_stopwatch_ctx.canvas.width);
+        this.local_stopwatch_ctx.drawImage(master_ctx.canvas, 0, 0, master_ctx.canvas.width, master_ctx.canvas.height,
+          0, 0, this.local_stopwatch_ctx.canvas.width, this.local_stopwatch_ctx.canvas.height);
+      } else if (this.STATE === 'ONLINE_GAME') {
+        this.online_stopwatch_ctx.clearRect(0, 0, this.online_stopwatch_ctx.canvas.width, this.online_stopwatch_ctx.canvas.width);
+        this.online_stopwatch_ctx.drawImage(master_ctx.canvas, 0, 0, master_ctx.canvas.width, master_ctx.canvas.height,
+          0, 0, this.online_stopwatch_ctx.canvas.width, this.online_stopwatch_ctx.canvas.height);
+      }
+
+    },
+    update: function() {
+
+      if (seconds < this.game.main_length / 2) {
+        r = lerp(0x32, 0xeb, 2 * seconds / this.game.main_length);
+        g = lerp(0xa6, 0xcd, 2 * seconds / this.game.main_length);
+        b = lerp(0xff, 0x34, 2 * seconds / this.game.main_length);
+      } else {
+        r = lerp(0xeb, 0xeb, (seconds - this.game.main_length / 2) / (this.game.main_length / 2));
+        g = lerp(0xcd, 0x34, (seconds - this.game.main_length / 2) / (this.game.main_length / 2));
+        b = lerp(0x34, 0x34, (seconds - this.game.main_length / 2) / (this.game.main_length / 2));
+      }
+
+      milli += 1000 / FPS;
+      seconds += 1 / FPS;
+
+      if (seconds >= this.game.main_length) {
+        seconds = this.game.main_length;
+        milli = 0;
+        clearInterval(stopwatch_canvas_interval);
+        master_ctx.clearRect(0, 0, master_ctx.canvas.width, master_ctx.canvas.height);
+      }
+
+      while (milli > 1000) {
+        milli -= 1000;
+      }
+    },
+    populateLeaderboard: function() {
+      let leaders = {
+        first: [],
+        second: [],
+        third: [],
+      };
+
+      let sorted_players = this.online_game.players.sort((a, b) => {
+        // sort highest to front of array
+        if (a.numCorrect - a.numIncorrect <= b.numCorrect - b.numIncorrect) {
+          return 1;
+        }
+        return -1;
+      });
+
+      let currScore = sorted_players[0].numCorrect - sorted_players[0].numIncorrect;
+      let currPlace = 1;
+
+      for (let p of sorted_players) {
+        if (p.numCorrect - p.numIncorrect < currScore) {
+          currScore = p.numCorrect - p.numIncorrect;
+
+          switch (currPlace) {
+            case 1:
+              currPlace += leaders.first.length;
+              break;
+            case 2:
+              currPlace += leaders.second.length;
+              break;
+            default:
+              currPlace++
+          }
+        }
+
+        let filled = false;
+        switch (currPlace) {
+          case 1:
+            leaders.first.push(p);
+            break;
+          case 2:
+            leaders.second.push(p);
+            break;
+          case 3:
+            leaders.third.push(p);
+            break;
+          default:
+            filled = true;
+            break
+        }
+
+        if (filled) break;
+      }
+
+      return leaders;
     }
   },
 
@@ -444,12 +708,24 @@ let app = new Vue({
       }
 
       return false;
-    }
+    },
+    opponent_players: function() {
+      return this.online_game.players.filter(p => p.name !== this.online_play_name);
+    },
   },
   watch: {
     fontFamily: function() {
       document.querySelector("html").style.fontFamily = this.fontFamily;
     },
+    online_play_name: function() {
+      this.online_play_name = this.online_play_name.substring(0, 8).replace(/[^A-Za-z0-9\s]/g,'');
+    },
+    join_room_code: function() {
+      this.join_room_code = this.join_room_code.substring(0, 16).replace(/[^A-Za-z0-9\s]/g,'');
+    },
+    create_room_code: function() {
+      this.create_room_code = this.create_room_code.substring(0, 16).replace(/[^A-Za-z0-9\s]/g,'');
+    }
   },
 
 });

@@ -5,7 +5,10 @@
   --header-height: 75px;
   --card-width: 50px;
   --card-height: 65px;
+  --opp-card-width: 30px;
+  --opp-card-height: 40px;
   --border-radius-small: 5px;
+  --border-radius-tiny: 3px;
 }
 
 * {
@@ -25,6 +28,24 @@ html, body {
 
 body {
   padding-bottom: 100px;
+}
+
+#v-app {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.fullwidth {
+   width: 100%;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .online-play-menu {
@@ -74,6 +95,7 @@ body {
   max-width: var(--site-content-max-width);
   display: grid;
   grid-template: 2fr 0.5fr 1rem repeat(4, 1fr) / repeat(5, 1fr);
+  padding: 0rem 2rem;
 }
 
 .welcome-title {
@@ -211,8 +233,13 @@ label {
 hr {
   width: 95%;
   border: 2px solid black;
-  border-radius: var(--border-radius-small);
+  border-radius: var(--border-radius-tiny);
   background-color: black;
+}
+
+.problemStack hr {
+  border: 2px solid white;
+  background-color: white;
 }
 
 .header-title-bar {
@@ -431,16 +458,6 @@ input[type=number] {
   border: 1px solid #00ff0033;
 }
 
-.missedAnswersStack {
-  left: 0;
-  bottom: 0;
-}
-
-.correctAnswersStack {
-  right: 0;
-  bottom: 0;
-}
-
 .problemStack {
   display:flex;
   align-items: center;
@@ -453,7 +470,7 @@ input[type=number] {
 
 .stackCardWrapper {
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse;
   align-items: center;
   justify-content: flex-start;
   width: 100%;
@@ -461,7 +478,7 @@ input[type=number] {
 
 .stackCard {
   border-radius: var(--border-radius-small);
-  margin-top: -90%;
+  margin-top: calc(var(--card-height) * -0.9);
   display: grid;
   grid-template: 10% 1fr 5% 1fr 10% / 10% 1fr 2fr 10%;
   cursor: pointer;
@@ -470,6 +487,21 @@ input[type=number] {
   font-size: calc(var(--card-height) / 3);
   width: var(--card-width);
   height: var(--card-height);
+}
+
+.oppStackCard {
+  border-radius: var(--border-radius-small);
+  margin-top: calc(var(--opp-card-height) * -0.9);
+  display: grid;
+  grid-template: 10% 1fr 5% 1fr 10% / 10% 1fr 2fr 10%;
+  cursor: pointer;
+  transition-duration: 0.4s;
+  border-bottom: 1px solid forestgreen;
+  font-size: calc(var(--opp-card-height) / 3);
+  width: var(--opp-card-width);
+  height: var(--opp-card-height);
+  color: black;
+  font-weight: bold;
 }
 
 .stackCard-numA {
@@ -492,6 +524,9 @@ input[type=number] {
 
 .missedAnswerCard {
   background-color: #f5b3a9;
+  color: black;
+  border-bottom: 1px solid #ff0000aa;
+  box-shadow: 0 0 2px 0 #ff0000aa;
 }
 
 .stackCard:hover {
@@ -505,6 +540,9 @@ input[type=number] {
 
 .correctAnswerCard {
   background-color: #a9f5d2;
+  color: black;
+  border-bottom: 1px solid forestgreen;
+  box-shadow: 0 0 2px 0 forestgreen;
 }
 
 .stackLabel {
@@ -512,16 +550,40 @@ input[type=number] {
   padding: 1rem;
   border-radius: var(--border-radius-small);
   color: white;
-  font-family: sans-serif;
   text-align: center;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
 }
 
-.missedAnswersStack .stackLabel {
+.missedAnswersStack {
+  left: 0;
+  bottom: 0;
   background-color: #ff0000aa;
 }
 
-.correctAnswersStack .stackLabel {
+.correctAnswersStack {
+  right: 0;
+  bottom: 0;
   background-color: #228b22aa;
+}
+
+.missedAnswersStack, .correctAnswersStack {
+  box-shadow: 0 0 20px 50px white;
+}
+
+.opponentCount {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: calc(var(--opp-card-height) * 1.25);
+  color: white;
+  border-radius: var(--border-radius-tiny);
 }
 
 .fontselection {
@@ -535,15 +597,6 @@ input[type=number] {
 
 .fontselection label {
   padding-bottom: 1rem;
-}
-
-.error-message {
-  color: white;
-  background-color: #ff0000;
-  border-radius: var(--border-radius-small);
-  border: 2px solid black;
-  margin-top: 1rem;
-  text-align: center;
 }
 
 .lobby-player-list {
@@ -573,10 +626,10 @@ input[type=number] {
   align-items: center;
   justify-content: center;
   color: var(--color-primary);
-  font-size: 70vh;
+  font-size: min(50vh, 50vw);
   width: 100vw;
   height: 100vh;
-  position: absolute;
+  position: fixed;
   left: 0;
   top: 0;
   z-index: 50;
@@ -584,24 +637,33 @@ input[type=number] {
 
 .all-players-stacks {
   display: flex;
-  align-items: stretch;
+  align-items: flex-end;
   justify-content: center;
   width: 100vw;
-  height: 100vh;
   position: fixed;
   bottom: 0;
   left: 0;
   z-index: -1;
 }
 
-.all-players-stacks .problemStack {
-  position: relative;
+.problemStack {
   z-index: -1;
-  filter: opacity(1);
+  padding: 0.5rem;
+  border-radius: var(--border-radius-small);
+  font-family: 'Montserrat' !important;
+  color: white;
+  margin: 0.5rem;
 }
 
-.translucent {
-  filter: opacity(0.5);
+.winnerStack {
+  background: linear-gradient(30deg, #a67c00, #ffbf00, #ffcf40, #ffdc73);
+  box-shadow: none !important;
+}
+
+.all-players-stacks .problemStack {
+  position: relative;
+  box-shadow: 0 0 2px 0 var(--color-primary);
+  background-color: var(--color-primary);
 }
 
 .score-table-wrapper {
@@ -635,6 +697,63 @@ input[type=number] {
   text-align: center;
 }
 
+.hidden {
+  display: none !important;
+}
+
+.toast-container {
+  position: fixed;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
+.toast-conatiner * {
+  pointer-events: none;
+}
+
+.toast {
+  max-width: 100%;
+  padding: 0.5rem;
+  margin: 1rem;
+  border: 2px solid #ebebeb;
+  background-color: #ffffffcc;
+  color: black;
+  font-family: 'Montserrat' !important;
+  border-radius: var(--border-radius-small);
+  text-align: center;
+  font-weight: bold;
+  font-size: 2vh;
+  border-radius: 100px;
+  transition-duration: 0.7s;
+  filter: opacity(0);
+  z-index: 50;
+}
+
+.show-toast {
+  filter: opacity(1);
+}
+
+.error {
+  color: white;
+  background-color: #ff0000aa;
+}
+
+.stopwatch-wrapper {
+  width: 100%;
+  height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stopwatch-canvas {
+  position: absolute;
+}
+
 @media only screen and (max-width: 900px) {
   .online-play-menu {
     display: flex;
@@ -650,18 +769,31 @@ input[type=number] {
 
   .welcome-content {
     grid-template: 2fr repeat(5, 1fr) / repeat(5, 1fr);
-    padding: 0rem 10%;
+    padding: 0rem 2rem;
+  }
+
+  .online-play-menu {
+    padding: 0rem 2rem;
   }
 
   .welcome-title {
     grid-column: 1 / span 5;
     grid-row: 1 / span 1;
-    font-size: 5rem;
+    text-align: center;
+  }
+
+  .online-play-menu-title {
+    text-align: center;
   }
 
   .welcome-subtitle {
     grid-column: 1 / span 5;
     grid-row: 2 / span 1;
+    text-align: center;
+  }
+
+  .online-play-menu-subtitle {
+    text-align: center;
   }
 
   .welcome-play-button {
@@ -696,8 +828,12 @@ input[type=number] {
     border-right: none;
   }
 
-  .stackCardWrapper {
-    flex-direction: column-reverse;
+  .opponentCount {
+    font-size: calc(var(--opp-card-width));
+  }
+
+  .online-play-menu, .welcome-title {
+    font-size: 3.5rem;
   }
 }
 

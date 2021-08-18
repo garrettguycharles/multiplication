@@ -51,8 +51,6 @@
             <button class="online-menu-button"
               @click="ONLINE_MENU_STATE = 'TOP_MENU'"
               ><i class="fas fa-arrow-left"></i>&nbsp;BACK</button>
-
-            <span class="error-message" v-if="this.error">{{ error }}</span>
           </div>
 
           <div class="online-menu-buttons" v-if="this.ONLINE_MENU_STATE === 'CREATE_ROOM'">
@@ -66,20 +64,18 @@
               <input type="text" name="" value="" v-model="create_room_code">
             </div>
 
-            <button class="online-menu-button" @click="createRoomByCode()">GO</button>
+            <button class="online-menu-button" @click="createRoomByCode()">CREATE ROOM</button>
 
             <button class="online-menu-button"
               @click="ONLINE_MENU_STATE = 'TOP_MENU'"
               ><i class="fas fa-arrow-left"></i>&nbsp;BACK</button>
-
-            <span class="error-message" v-if="this.error">{{ error }}</span>
           </div>
 
         </div>
       </div>
 
 
-      <div v-if="this.STATE === 'ONLINE_GAME'">
+      <div v-if="this.STATE === 'ONLINE_GAME'" class="fullwidth">
         <div class="header">
           <div class="header-title-bar">
             <div class="spacer-header-left">
@@ -103,7 +99,6 @@
               <select id="fontSelect" v-model="fontFamily">
                 <option value="">normal</option>
                 <option value="monospace">monospace</option>
-                <option value="cursive">cursive</option>
                 <option value="sans-serif">sans-serif</option>
                 <option value="'Amatic SC', cursive">Amatic SC</option>
                 <option value="'Cinzel', serif">Cinzel</option>
@@ -111,7 +106,6 @@
                 <option value="'Montserrat'">Montserrat</option>
                 <option value="'Permanent Marker', cursive">Permanent Marker</option>
                 <option value="'Poiret One', cursive">Poiret One</option>
-                <option value="'Press Start 2P', cursive">Press Start</option>
                 <option value="'Righteous', cursive">Righteous</option>
                 <option value="'Staatliches', cursive">Staatliches</option>
               </select>
@@ -120,10 +114,10 @@
         </div>
 
 
-        <div v-if="this.ONLINE_GAME_STATE === 'LOBBY'">
+        <div v-if="this.ONLINE_GAME_STATE === 'LOBBY'" class="flex-center">
           <div class="lobby-player-list">
             <h2 class="lobby-player-list-title">PLAYERS</h2>
-            <div v-for="player in online_game.players" class="lobby-player">
+            <div v-for="player in online_game.players" class="lobby-player" :key="player.name">
               <span>{{ player.name }}</span>
             </div>
 
@@ -139,32 +133,37 @@
 
         </div>
 
-        <div v-if="['PLAYING_GAME', 'SHOW_SCORES'].includes(this.ONLINE_GAME_STATE)" :class="{'all-players-stacks':true, 'translucent':game.running}">
+        <div v-if="this.ONLINE_GAME_STATE === 'PLAYING_GAME'" :class="{'all-players-stacks':true}">
 
-          <div class="problemStack correctAnswersStack" v-for="player in online_game.players">
+          <div class="problemStack" v-for="player in opponent_players" :key="player.name">
             <div class="stackCardWrapper">
-              <div class="stackCard correctAnswerCard" v-for="problem in player.correctAnswers">
+
+              <div class="oppStackCard correctAnswerCard" v-for="problem in player.correctAnswers" :key="problem.numA.toString() + ' ' + problem.numB.toString()">
                 <div class="stackCard-numA">{{ problem.numA }}</div>
                 <div class="stackCard-operator">x</div>
                 <div class="stackCard-numB">{{ problem.numB }}</div>
               </div>
+
             </div>
 
+            <span class="opponentCount">{{ player.numCorrect - player.numIncorrect }}</span>
             <hr />
-            <div class="stackLabel">{{ player.name }}<br />({{ player.numCorrect }})</div>
+            <div class="stackLabel">{{ player.name }}</div>
           </div>
 
         </div>
 
 
         <div v-if="this.ONLINE_GAME_STATE === 'PLAYING_GAME'">
-          <div class="game-countdown" v-if="stopwatch.countdown > -1"><span>{{ stopwatch.countdown }}</span></div>
+          <div class="game-countdown" v-if="stopwatch.countdown !== -1"><span>{{ stopwatch.countdown }}</span></div>
 
 
           <div class="problem-wrapper">
             <div class="clock-wrapper">
               <div class="stopwatch-display game-seconds">
-                <span v-if="game.running">{{ stopwatch.game.seconds }}</span>
+                <div :class="{'hidden':game.running === false, 'stopwatch-wrapper': true}">
+                  <canvas class="stopwatch-canvas" id="online_stopwatch_canvas"></canvas>
+                </div>
               </div>
               <div id="mult-problem" class="mult-problem">
                 <div id="numA" class="mult-problem-num">{{ numA }}</div>
@@ -175,7 +174,6 @@
                 </form>
               </div>
               <div class="stopwatch-display problem-seconds">
-                <span v-if="game.running">{{ stopwatch.problem.seconds }}</span>
               </div>
             </div>
           </div>
@@ -184,28 +182,92 @@
 
           <div class="problemStack missedAnswersStack">
             <div class="stackCardWrapper">
-              <div class="stackCard missedAnswerCard" v-for="problem in incorrectAnswers" @click="setProblem(problem)">
+              <div class="stackCard missedAnswerCard" v-for="problem in incorrectAnswers" @click="setProblem(problem)" :key="problem.numA.toString() + ' ' + problem.numB.toString()">
                 <div class="stackCard-numA">{{ problem.numA }}</div>
                 <div class="stackCard-operator">x</div>
                 <div class="stackCard-numB">{{ problem.numB }}</div>
               </div>
             </div>
 
+            <span class="opponentCount">{{ numIncorrect }}</span>
             <hr />
-            <div class="stackLabel">Missed<br />({{ numIncorrect }})</div>
+            <div class="stackLabel">Missed</div>
           </div>
 
           <div class="problemStack correctAnswersStack">
+
             <div class="stackCardWrapper">
-              <div class="stackCard correctAnswerCard" v-for="problem in correctAnswers" @click="setProblem(problem)">
+              <div class="stackCard correctAnswerCard" v-for="problem in correctAnswers" @click="setProblem(problem)" :key="problem.numA.toString() + ' ' + problem.numB.toString()">
                 <div class="stackCard-numA">{{ problem.numA }}</div>
                 <div class="stackCard-operator">x</div>
                 <div class="stackCard-numB">{{ problem.numB }}</div>
               </div>
             </div>
 
+            <span class="opponentCount">{{ numCorrect }}</span>
             <hr />
-            <div class="stackLabel">Correct<br />({{ numCorrect }})</div>
+            <div class="stackLabel">Correct</div>
+          </div>
+
+        </div>
+
+        <div v-if="this.ONLINE_GAME_STATE === 'SHOW_SCORES'" :class="{'all-players-stacks':true}">
+
+          <div class="problemStack" v-for="player in online_game.leaders.second" :key="player.name" :class="{'problemStack':true}">
+            <div class="stackCardWrapper">
+
+              <div class="oppStackCard correctAnswerCard" v-for="problem in player.correctAnswers" :key="problem.numA.toString() + ' ' + problem.numB.toString()">
+                <div class="stackCard-numA">{{ problem.numA }}</div>
+                <div class="stackCard-operator">x</div>
+                <div class="stackCard-numB">{{ problem.numB }}</div>
+              </div>
+
+            </div>
+
+            <span class="opponentCount">{{ player.numCorrect - player.numIncorrect }}</span>
+            <hr />
+            <div class="stackLabel">{{ player.name }}
+              <br>
+              Second!
+            </div>
+          </div>
+
+          <div class="problemStack" v-for="player in online_game.leaders.first" :key="player.name" :class="{'problemStack':true, 'winnerStack':true}">
+            <div class="stackCardWrapper">
+
+              <div class="oppStackCard correctAnswerCard" v-for="problem in player.correctAnswers" :key="problem.numA.toString() + ' ' + problem.numB.toString()">
+                <div class="stackCard-numA">{{ problem.numA }}</div>
+                <div class="stackCard-operator">x</div>
+                <div class="stackCard-numB">{{ problem.numB }}</div>
+              </div>
+
+            </div>
+
+            <span class="opponentCount">{{ player.numCorrect - player.numIncorrect }}</span>
+            <hr />
+            <div class="stackLabel">{{ player.name }}
+              <br>
+              WINNER!
+            </div>
+          </div>
+
+          <div class="problemStack" v-for="player in online_game.leaders.third" :key="player.name" :class="{'problemStack':true}">
+            <div class="stackCardWrapper">
+
+              <div class="oppStackCard correctAnswerCard" v-for="problem in player.correctAnswers" :key="problem.numA.toString() + ' ' + problem.numB.toString()">
+                <div class="stackCard-numA">{{ problem.numA }}</div>
+                <div class="stackCard-operator">x</div>
+                <div class="stackCard-numB">{{ problem.numB }}</div>
+              </div>
+
+            </div>
+
+            <span class="opponentCount">{{ player.numCorrect - player.numIncorrect }}</span>
+            <hr />
+            <div class="stackLabel">{{ player.name }}
+              <br>
+              Third!
+            </div>
           </div>
 
         </div>
@@ -221,7 +283,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="player in online_game.players">
+              <tr v-for="player in online_game.players" :key="player.name">
                 <td>{{ player.name }}</td>
                 <td>{{ player.numCorrect }}</td>
                 <td>{{ player.numIncorrect }}</td>
@@ -236,7 +298,7 @@
       </div>
 
 
-      <div v-if="this.STATE === 'LOCAL_PLAY'">
+      <div v-if="this.STATE === 'LOCAL_PLAY'" class="fullwidth">
         <div class="header">
           <div class="header-title-bar">
             <div class="spacer-header-left">
@@ -264,17 +326,15 @@
             <div class="setting">
               <label for="fontFamily">Pick a Font:</label>
               <select id="fontSelect" v-model="fontFamily">
-                <option value="">normal</option>
+                <option value="'Montserrat'">Montserrat</option>
+                <option value="'Permanent Marker', cursive">Permanent Marker</option>
                 <option value="monospace">monospace</option>
                 <option value="cursive">cursive</option>
                 <option value="sans-serif">sans-serif</option>
                 <option value="'Amatic SC', cursive">Amatic SC</option>
                 <option value="'Cinzel', serif">Cinzel</option>
                 <option value="'Grandstander', cursive">Grandstander</option>
-                <option value="'Montserrat'">Montserrat</option>
-                <option value="'Permanent Marker', cursive">Permanent Marker</option>
                 <option value="'Poiret One', cursive">Poiret One</option>
-                <option value="'Press Start 2P', cursive">Press Start</option>
                 <option value="'Righteous', cursive">Righteous</option>
                 <option value="'Staatliches', cursive">Staatliches</option>
               </select>
@@ -293,7 +353,9 @@
         <div class="problem-wrapper">
           <div class="clock-wrapper">
             <div class="stopwatch-display game-seconds">
-              <span v-if="game.running">{{ stopwatch.game.seconds }}</span>
+              <div :class="{'hidden':game.running === false, 'stopwatch-wrapper': true}">
+                <canvas class="stopwatch-canvas" id="local_stopwatch_canvas"></canvas>
+              </div>
             </div>
             <div id="mult-problem" class="mult-problem">
               <div id="numA" class="mult-problem-num">{{ numA }}</div>
@@ -373,30 +435,37 @@
 
         <div class="problemStack missedAnswersStack">
           <div class="stackCardWrapper">
-            <div class="stackCard missedAnswerCard" v-for="problem in incorrectAnswers" @click="setProblem(problem)">
+            <div class="stackCard missedAnswerCard" v-for="problem in incorrectAnswers" @click="setProblem(problem)" :key="problem.numA.toString() + ' ' + problem.numB.toString()">
               <div class="stackCard-numA">{{ problem.numA }}</div>
               <div class="stackCard-operator">x</div>
               <div class="stackCard-numB">{{ problem.numB }}</div>
             </div>
           </div>
 
+          <span class="opponentCount">{{ numIncorrect }}</span>
           <hr />
-          <div class="stackLabel">Missed<br />({{ numIncorrect }})</div>
+          <div class="stackLabel">Missed</div>
         </div>
 
         <div class="problemStack correctAnswersStack">
           <div class="stackCardWrapper">
-            <div class="stackCard correctAnswerCard" v-for="problem in correctAnswers" @click="setProblem(problem)">
+            <div class="stackCard correctAnswerCard" v-for="problem in correctAnswers" @click="setProblem(problem)" :key="problem.numA.toString() + ' ' + problem.numB.toString()">
               <div class="stackCard-numA">{{ problem.numA }}</div>
               <div class="stackCard-operator">x</div>
               <div class="stackCard-numB">{{ problem.numB }}</div>
             </div>
           </div>
 
+          <span class="opponentCount">{{ numCorrect }}</span>
           <hr />
-          <div class="stackLabel">Correct<br />({{ numCorrect }})</div>
+          <div class="stackLabel">Correct</div>
         </div>
 
+      </div>
+
+      <div class="toast-container">
+        <div :class="{'toast':true, 'show-toast': show_toast}">{{ toast }}</div>
+        <div :class="{'toast':true, 'error':true, 'show-toast':show_error}">{{ error }}</div>
       </div>
 
     </div>
