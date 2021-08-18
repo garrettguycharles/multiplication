@@ -125,8 +125,9 @@ let app = new Vue({
         return;
       }
 
+      this.socket = io(); // server side
 
-      this.socket = io('http://localhost:3005');
+      //this.socket = io('http://localhost:3005'); // development side
       //this.socket.connect('http://localhost:3005');
 
       this.socket.on("welcome", () => {

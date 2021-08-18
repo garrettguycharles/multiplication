@@ -832,7 +832,7 @@ input[type=number] {
     font-size: calc(var(--opp-card-width));
   }
 
-  .online-play-menu, .welcome-title {
+  .online-play-menu-title, .welcome-title {
     font-size: 3.5rem;
   }
 }
