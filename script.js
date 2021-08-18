@@ -171,7 +171,8 @@ let app = new Vue({
         return;
       }
 
-      this.socket = io('http://localhost:3005');
+      this.socket = io(); // server side
+      // this.socket = io('http://localhost:3005'); // development side
       console.log("Attempted to create room by code.");
 
       //this.socket.connect('http://localhost:3005');
